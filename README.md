@@ -4,3 +4,5 @@ alpha version of the raw dataset corrector
 Please download and install the latest release of our Python package.
 
 Make sure you have installed twixtools modified by Chong!!!
+Here's the link:
+https://github.com/OSU-MR/Python_read_Siemens_rawdata
