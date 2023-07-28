@@ -44,6 +44,8 @@ Then you need to import some functions and define paths like this:
 	                                                  generates correction map for all datasets inside input folder
 
 4.Run The Code
+
+
 number_of_threads = 1 # how many threads you want to run at the same time
 
 threads = create_and_start_threadings(number_of_threads, getting_correction_map, base_dir, input_folder, output_folder, folder_names, auto_rotation='LGE',debug = True)
