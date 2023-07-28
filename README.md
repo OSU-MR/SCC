@@ -34,7 +34,7 @@ The sturcture of your dataset folders should be:
 	                             ---correction map folder of your datasets_n
 
 
-    
+Then you need to import some functions and define paths like this:
 	from brightness_correction.brightness_correction import getting_correction_map, create_and_start_threadings, displaying_results
 	base_dir = "/your_project"
 	input_folder = "rawdata"
