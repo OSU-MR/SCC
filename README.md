@@ -36,7 +36,6 @@ The sturcture of your dataset folders should be:
 
 
 	from brightness_correction.brightness_correction import getting_correction_map, create_and_start_threadings, displaying_results
-
 	base_dir = "/your_project"
 	input_folder = "rawdata"
 	output_folder = "correction_map"
