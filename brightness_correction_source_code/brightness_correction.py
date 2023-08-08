@@ -83,7 +83,7 @@ def move_dimension_to_front_data(array, all_dimensions, dim_to_move):
         source = get_dimension_indices(all_dimensions, [dim_to_move])[0]
         return np.moveaxis(array, source, 0)
     except IndexError:
-        ...#print(f"Dimension '{dim_to_move}' not found.")
+        print(f"Warning: Dimension '{dim_to_move}' not found.")
         return array
     
 def move_dimension_to_front_info(all_dimensions, dim_to_move):
@@ -92,17 +92,24 @@ def move_dimension_to_front_info(all_dimensions, dim_to_move):
         all_dimensions.remove(dim_to_move)  # Remove the dimension
         all_dimensions.insert(0, dim_to_move)  # Prepend the dimension
     else:
-        ...#print(f"Dimension '{dim_to_move}' not found.")
+        print(f"Warning: Dimension '{dim_to_move}' not found.")
     return all_dimensions
 
 def middle_slice(data,data_dimensions, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'], dim_to_set_to_zero = ['Phs','Set']):
     ###all_dimensions = ['Ide', 'Idd', 'Idc', 'Idb', 'Ida', 'Seg', 'Set', 'Rep','Phs', 'Eco', 'Par', 'Sli', 'Ave', 'Lin', 'Cha', 'Col']
     for dim in dim_to_set_to_zero:
-        data = move_dimension_to_front_data(data, data_dimensions, dim)
-        data_dimensions = move_dimension_to_front_info(data_dimensions, dim)
-        data = data[0, ...] # Set the first slice to zero
-        #remove the first element in data_dimensions
-        data_dimensions = data_dimensions[1:]
+        if dim in data_dimensions:
+            data = move_dimension_to_front_data(data, data_dimensions, dim)
+            data_dimensions = move_dimension_to_front_info(data_dimensions, dim)
+            data = data[0, ...] # Set the first slice to zero
+            #remove the first element in data_dimensions
+            data_dimensions = data_dimensions[1:]
+
+    # print("*******************dim_info_org after setting to zeros**********************")
+    # dim_info_zip = zip( data_dimensions , data.shape )
+    # for i in dim_info_zip:
+    #     print(i,end=' ')
+    # print("\n")
 
     shape = data.shape
     slices = [slice(None)] * len(shape)  # By default, keep all of the data for all dimensions
@@ -123,7 +130,7 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
     
     #twix, data_org, dim_info_org,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
     twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
-    print(dim_info_org)
+    print("dim_info_org",dim_info_org)
     data = data_org.squeeze()
 
         #all possilbe dim_info_org                                              *       *
@@ -147,8 +154,10 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
 
     try:
         num_sli = data.shape[dim_info_org.index('Sli')]
+        
     except:
         num_sli = 1
+    #print('num_sli',num_sli)
 
     correction_map_all = np.zeros((num_sli,data.shape[dim_info_org.index('Lin')],data.shape[dim_info_org.index('Col')]//2))
     inversed_correction_map_all = np.zeros((num_sli,data.shape[dim_info_org.index('Lin')],data.shape[dim_info_org.index('Col')]//2))
@@ -157,16 +166,20 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
 
 
 
-    print("*******************dim_info_org**********************")
-    dim_info_zip = zip( dim_info_org , data.shape )
-    for i in dim_info_zip:
-        print(i,end=' ')
-    print("\n")
+    # print("*******************dim_info_org before reducing dimentions**********************")
+    # dim_info_zip = zip( dim_info_org , data.shape )
+    # for i in dim_info_zip:
+    #     print(i,end=' ')
+    # print("\n")
 
 
     data,dim_info_org = middle_slice(data,data_dimensions = dim_info_org, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'])
 
-    # print("*******************dim_info_org**********************",dim_info_org,data.shape)
+    # print("*******************dim_info_org after reducing dimensions**********************")
+    # dim_info_zip = zip( dim_info_org , data.shape )
+    # for i in dim_info_zip:
+    #     print(i,end=' ')
+    # print("\n")
 
     for n in range(num_sli):
 
@@ -222,7 +235,8 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
                                                                                                                                       num_sli, correction_map_all,
                                                                                                                                       inversed_correction_map_all,
                                                                                                                                       n)
-            print("Can't use the default sense reconstruction method! display low resolution interpolated image instead!")
+            #print the warning with color
+            print("\033[91m" + "Can't use the default sense reconstruction method! display low resolution interpolated image instead!" + "\033[0m")
             recon_results[n,...] = x2d
 
     #return A,B,grappa_results,correction_map_all
@@ -231,7 +245,7 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
 def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
                                 num_sli, correction_map_all,inversed_correction_map_all, n,
-                                ksp , ref_padded , noise_kspace , dim_info_noise):
+                                ksp = None , ref_padded = None , noise_kspace = None , dim_info_noise = None ):
     Zi_body_coils, Zi_surface_coils, img_quat , normal= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
     inter_img_body_coils, inter_img_surface_coils = remove_edges(Zi_body_coils,Zi_surface_coils)
     inter_img_body_coils = inter_img_body_coils.transpose([2,0,1])
@@ -242,13 +256,16 @@ def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_o
         inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = CustomProcedure(inter_img_body_coils,
                                                                                                          inter_img_surface_coils, 
                                                                                                          ksp, ref_padded, noise_kspace, dim_info_noise)
-        print("custom procedure found and used!")
+        #print with green color
+        print("\033[92m" + "custom procedure found and used!" + "\033[0m")
     except Exception as e:
         if CustomProcedure != None:
-            print("custom procedure found, but there is something wrong with it. Use default procedure!")
+            #print with red color
+            print("\033[91m" + "custom procedure found, but there is something wrong with it. Use default procedure!" + "\033[0m")
             print(e)
         else:
-            print("no custom procedure found, use default procedure!")
+            #print with yellow color
+            print("\033[93m" + "no custom procedure found, use default procedure!" + "\033[0m")
         inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = defaultProcedure(inter_img_body_coils,
                                                                                                           inter_img_surface_coils, 
                                                                                                           ksp, ref_padded, noise_kspace, dim_info_noise)
@@ -340,8 +357,8 @@ def getting_and_saving_correction_map(base_dir ,input_folder, output_folder, fol
                     #save quat and slc_dir for future debugging
                     if debug:
                         np.save(quat_filename, quat)
-    #print end information with red color
-    print("\033[91m" + "Thread "+str(thread_idx)+" is done! You can find the results in the output folder! You can also display the results by using the function displaying_results(). Please check cells below!" + "\033[0m")
+    #print end information with color
+    print("\033[92m" + "Thread "+str(thread_idx)+" is done! You can find the results in the output folder! You can also display the results by using the function displaying_results(). Please check cells below!" + "\033[0m")
 
 
 def divide_list(l, n):
@@ -355,6 +372,8 @@ import threading
 def create_and_start_threadings(num_thread , target, base_dir, input_folder, output_folder, folder_names, 
                                 auto_rotation= True,debug = True,apply_correction_during_sense_recon = False,
                                 CustomProcedure = None):
+   #create the output folder if it doesn't exist
+   os.makedirs(os.path.join(base_dir, output_folder), exist_ok=True)
 
    #create_and_start_threadings
    folder_names = list(divide_list(folder_names, len(folder_names)//num_thread))
@@ -364,8 +383,8 @@ def create_and_start_threadings(num_thread , target, base_dir, input_folder, out
       threads[i] = threading.Thread( target = target, args=(base_dir, input_folder, output_folder, folder_names[i],
                                                             auto_rotation, debug, apply_correction_during_sense_recon,
                                                             CustomProcedure, i) )
-      #print start information with red color
-      print("\033[91m" + "Thread "+str(i)+" has been created! please until it finishes!" + "\033[0m")
+      #print start information with green color
+      print("\033[92m" + "Thread "+str(i)+" has been created! please wait until it finishes!" + "\033[0m")
       threads[i].start()
 
    return threads
