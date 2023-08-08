@@ -3,8 +3,7 @@ alpha version of the raw dataset corrector
 
 Please download and install the latest release of our Python package.
 You can download the rawdata used in demo from here:
-https://figshare.com/ndownloader/files/41881158
-
+https://figshare.com/ndownloader/files/41881158    
 https://figshare.com/ndownloader/files/41915115
 
 Make sure you have installed twixtools modified by Chong!!!
