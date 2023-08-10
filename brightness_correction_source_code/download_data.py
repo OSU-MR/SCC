@@ -26,3 +26,118 @@ def download_file_from_figshare(saving_path, url):
         file.write(response.content)
     #print with green color
     print("\033[92m" + f"File saved as {filename}" + "\033[0m")
+
+
+import subprocess
+
+def install_missing_packages():
+    # List of missing packages to be installed
+    packages = [
+        "numpy==1.23.4",
+        "sigpy==0.1.25",
+        "matplotlib==3.7.2",
+    ]
+
+    # Install each package
+    for package in packages:
+        print(f"Installing {package}...")
+        subprocess.run(["pip", "install", package])
+
+    print("Installation of missing packages complete!")
+
+
+import requests
+import zipfile
+import os
+import subprocess
+import pkg_resources
+
+def download_file(url, target_path):
+    response = requests.get(url, stream=True)
+    handle = open(target_path, "wb")
+    for chunk in response.iter_content(chunk_size=512):
+        if chunk:  # filter out keep-alive new chunks
+            handle.write(chunk)
+    handle.close()
+
+def check_numpy_version():
+    required_version = (1, 17, 3)
+    
+    try:
+        numpy_version = pkg_resources.get_distribution("numpy").version
+        installed_version = tuple(map(int, numpy_version.split('.')))
+
+        if installed_version < required_version:
+            return False
+        else:
+            return True
+
+    except pkg_resources.DistributionNotFound:
+        return False
+    
+def copy_file(src, dest):
+    """Manually copy the contents of one file to another."""
+    with open(src, 'r') as source:
+        content = source.read()
+    with open(dest, 'w') as destination:
+        destination.write(content)
+
+def recursive_delete_dir(target_dir):
+    # List all files and directories in the target directory
+    for item in os.listdir(target_dir):
+        item_path = os.path.join(target_dir, item)
+        
+        # Check if the item is a directory
+        if os.path.isdir(item_path):
+            # Recursively delete the sub-directory
+            recursive_delete_dir(item_path)
+        else:
+            # Remove the file
+            os.remove(item_path)
+    
+    # Once the directory is empty, delete it
+    os.rmdir(target_dir)
+
+def install_twixtools():
+    # URL of the zip file
+    url = "https://codeload.github.com/pehses/twixtools/zip/refs/heads/master"
+    target_path = "twixtools-master.zip"
+    
+    # Downloading the zip file
+    print("Downloading twixtools...")
+    download_file(url, target_path)
+    
+    # Extracting the zip file
+    print("Extracting the zip file...")
+    with zipfile.ZipFile(target_path, 'r') as zip_ref:
+        zip_ref.extractall(".")
+
+    # Replace twix_map.py with the one in current directory
+    print("Replacing twix_map.py...")
+    copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
+    
+    
+    # Check and install numpy if required
+    if not check_numpy_version():
+        print("Installing numpy...")
+        subprocess.run(["pip", "install", "numpy>=1.17.3"])
+    else:
+        print("Sufficient numpy version is already installed.")
+    
+    # Installing twixtools
+    os.chdir("twixtools-master")
+    print("Installing twixtools...")
+    subprocess.run(["pip", "install", "."])
+    os.chdir("..")
+
+    # Removing the zip file and the extracted directory
+    print("Removing the zip file and the extracted directory...")
+    os.remove(target_path)
+    os.remove("map_twix.py")
+    directory_to_delete = 'twixtools-master'
+    recursive_delete_dir(directory_to_delete)
+
+    #install missing packages
+    install_missing_packages()
+    
+    print("Installation complete!")

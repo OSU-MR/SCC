@@ -72,7 +72,7 @@ def read_specific_block(data_name, twix, mapped, index_for_scan = -1):
     padsize = [(0,0)]*num_dim
     dim_E0 = dim_info.index('Col')
     padsize[dim_E0] = (pre_z, 0)
-    print('pad size:',padsize)
-    print(dim_info)
+    #print('pad size:',padsize)
+    #print(dim_info)
     data = np.pad(data, padsize,'constant', constant_values=(0,0))
     return data,dim_info

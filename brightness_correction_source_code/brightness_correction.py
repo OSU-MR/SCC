@@ -4,7 +4,8 @@ from brightness_correction.preprocess import ifftnd, rms_comb,remove_RO_oversaml
 from brightness_correction.read_data import readtwix_arry_all
 from brightness_correction.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
 from brightness_correction.calculating_correction_map import calculate_correction_map, normalize_images
-from brightness_correction.recon import grappa_reconstruction,sense_reconstruction, remove_edges, rotate_image, pad_ref
+#from brightness_correction.recon import grappa_reconstruction
+from brightness_correction.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
 from matplotlib import pyplot as plt
 
 #######################################
@@ -130,7 +131,7 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
     
     #twix, data_org, dim_info_org,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
     twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
-    print("dim_info_org",dim_info_org)
+    #print("dim_info_org",dim_info_org)
     data = data_org.squeeze()
 
         #all possilbe dim_info_org                                              *       *
@@ -207,7 +208,8 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
                     C = rms_comb(C, axis=0)
                 
                 else: #doing the reconstruction
-                    ##grappa reconstruction
+                    ##grappa reconstruction #if you want to use grappa reconstruction
+                    # uncomment the following line and the parts about grappa reconstruction
                     #C = grappa_reconstruction(ksp,ref_padded)
 
                     #sense reconstruction

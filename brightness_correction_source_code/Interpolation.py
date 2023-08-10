@@ -84,7 +84,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
     
 
 
-    print("scan_index",scan_index)
+    #print("scan_index",scan_index)
     reado_idx = 0
     phase_idx = 1
     slice_idx = 2

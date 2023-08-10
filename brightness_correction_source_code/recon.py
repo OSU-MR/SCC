@@ -1,4 +1,4 @@
-import pygrappa
+#import pygrappa
 import numpy as np
 import sigpy.mri as mr
 from brightness_correction.preprocess import ifftnd, rms_comb
@@ -6,14 +6,14 @@ from brightness_correction.Interpolation import quaternion_to_directions
 
 
 
-def grappa_reconstruction(ksp,ref_padded):
-    grappa_recon = pygrappa.grappa(ksp,ref_padded,coil_axis=0)
-    grappa_recon = ifftnd(grappa_recon, [1,2])
-    grappa_recon = rms_comb(grappa_recon,0)
-    grappa_img = np.abs(grappa_recon[::-1,grappa_recon.shape[-1]//4:-grappa_recon.shape[-1]//4])
-    grappa_img = grappa_img/np.max(grappa_img)
+# def grappa_reconstruction(ksp,ref_padded):
+#     grappa_recon = pygrappa.grappa(ksp,ref_padded,coil_axis=0)
+#     grappa_recon = ifftnd(grappa_recon, [1,2])
+#     grappa_recon = rms_comb(grappa_recon,0)
+#     grappa_img = np.abs(grappa_recon[::-1,grappa_recon.shape[-1]//4:-grappa_recon.shape[-1]//4])
+#     grappa_img = grappa_img/np.max(grappa_img)
 
-    return grappa_img
+#     return grappa_img
 
 def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0):
     mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
