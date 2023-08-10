@@ -22,10 +22,10 @@ Step to set the environment for SCIC in conda:
 
 3. Run the demo code
 
-   
-   create a new folder
-   
-   download the "brighness_correction_demo.ipynb" and the newest version of "brightness_correction-*.tar.gz" to the folder
+
+   clone the repository
+
+   enter the SCIC folder
    
    open the ipynb file in jupyter notebook and click "run all cells button".
 
