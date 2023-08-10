@@ -13,9 +13,12 @@ Step to set the environment for SCIC in conda:
 3. Set up the environment
 
    conda install jupyterlab
+   
    conda install ipykernel
+   
    python -m ipykernel install --user --name=SCIC
+   
    jupyter lab
 
-4. 
+4. Open the brighness_correction_demo.ipynb in the jupyternote book and click run all cells button.
 
