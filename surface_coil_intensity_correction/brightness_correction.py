@@ -1,11 +1,11 @@
 import os
 import numpy as np
-from brightness_correction.preprocess import ifftnd, rms_comb,remove_RO_oversamling
-from brightness_correction.read_data import readtwix_arry_all
-from brightness_correction.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
-from brightness_correction.calculating_correction_map import calculate_correction_map, normalize_images
+from surface_coil_intensity_correction.preprocess import ifftnd, rms_comb,remove_RO_oversamling
+from surface_coil_intensity_correction.read_data import readtwix_arry_all
+from surface_coil_intensity_correction.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
+from surface_coil_intensity_correction.calculating_correction_map import calculate_correction_map, normalize_images
 #from brightness_correction.recon import grappa_reconstruction
-from brightness_correction.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
+from surface_coil_intensity_correction.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
 from matplotlib import pyplot as plt
 
 #######################################
@@ -333,6 +333,8 @@ def getting_and_saving_correction_map(base_dir ,input_folder, output_folder, fol
         if os.path.isdir(full_dir_name):
         # Loop over all files in the directory
             for filename in os.listdir(full_dir_name):
+            # Check if the file is a .dat file
+                if filename.endswith(".dat"):
             #if filename.find('SAX') != -1:#this is a file filter uncomment this line and change the SAX to the keyword you want to filter
                 # Construct the full file path
                     #full_file_path = os.path.join(full_dir_name, filename)
@@ -420,6 +422,9 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
             for filename in os.listdir(full_dir_name):
                 #if filename.find('SAX') != -1: #this is a file filter uncomment this line and change the SAX to the keyword you want to filter
                 # Construct the full file path
+                    #skip if the file starts with .ipynb_checkpoints.
+                    if filename.startswith('.ipynb_checkpoints'):
+                        continue
                 
                     correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.correction_map.npy")
                     correction_map_all = np.load(correction_map_all_filename)

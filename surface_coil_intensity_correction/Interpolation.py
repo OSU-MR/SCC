@@ -1,5 +1,5 @@
 import numpy as np
-from brightness_correction.preprocess import adjust_rawdata_dimmension, ifftnd, rms_comb
+from surface_coil_intensity_correction.preprocess import adjust_rawdata_dimmension, ifftnd, rms_comb
 from scipy.interpolate import RegularGridInterpolator
 
 def generate_3D_data(mapped_data ,pre_scan = 0):

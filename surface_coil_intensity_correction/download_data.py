@@ -120,6 +120,7 @@ def install_twixtools():
         #download the modified twixtools
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
         download_file_from_figshare('./',url_map_twix)
+        copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
         os.remove("map_twix.py")
     
     

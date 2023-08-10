@@ -1,8 +1,8 @@
 #import pygrappa
 import numpy as np
 import sigpy.mri as mr
-from brightness_correction.preprocess import ifftnd, rms_comb
-from brightness_correction.Interpolation import quaternion_to_directions
+from surface_coil_intensity_correction.preprocess import ifftnd, rms_comb
+from surface_coil_intensity_correction.Interpolation import quaternion_to_directions
 
 
 
