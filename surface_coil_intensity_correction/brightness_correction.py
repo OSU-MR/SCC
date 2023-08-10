@@ -131,15 +131,21 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
     
     #twix, data_org, dim_info_org,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
     twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
-    #print("dim_info_org",dim_info_org)
+    print("dim_info_org\n",dim_info_org,'\n',data_org.shape)
+
     data = data_org.squeeze()
 
         #all possilbe dim_info_org                                              *       *
         #"Ide", "Idd", "Idc", "Idb", "Ida", "Seg", "Set", "Rep","Phs", "Eco", "Par", "Sli", "Ave", "Lin", "Cha", "Col"
     try:
-        dim_info_org.index('Set')
-        print("multiple sets")
-        C = None
+        try:
+            dim_info_org.index('Set')
+            print("multiple sets")
+            C = None
+        except:
+            dim_info_org.index('Sli')
+            print("multiple slices")
+            C = None            
     except:
         image = ifftnd(data, [dim_info_org.index('Lin'),dim_info_org.index('Col')])
         image = rms_comb(image)

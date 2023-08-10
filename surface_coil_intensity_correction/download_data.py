@@ -114,7 +114,13 @@ def install_twixtools():
 
     # Replace twix_map.py with the one in current directory
     print("Replacing twix_map.py...")
-    copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
+    try:
+        copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
+    except FileNotFoundError:
+        #download the modified twixtools
+        url_map_twix = "https://figshare.com/ndownloader/files/41951475"
+        download_file_from_figshare('./',url_map_twix)
+        os.remove("map_twix.py")
     
     
     # Check and install numpy if required
@@ -133,7 +139,6 @@ def install_twixtools():
     # Removing the zip file and the extracted directory
     print("Removing the zip file and the extracted directory...")
     os.remove(target_path)
-    os.remove("map_twix.py")
     directory_to_delete = 'twixtools-master'
     recursive_delete_dir(directory_to_delete)
 
