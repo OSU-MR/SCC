@@ -35,6 +35,7 @@ go to the path of the SCIC folder
 
 run the following command:
 
+
 pip install -e .
    
 
