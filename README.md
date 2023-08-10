@@ -34,6 +34,7 @@ Step to set the environment for SCIC in conda:
 go to the path of the SCIC folder
 
 run the following command:
+
 pip install -e .
    
 
