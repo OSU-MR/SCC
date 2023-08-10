@@ -20,5 +20,12 @@ Step to set the environment for SCIC in conda:
    
    jupyter lab
 
-3. Open the brighness_correction_demo.ipynb in the jupyternote book and click run all cells button.
+3. Run the demo code
+
+   
+   create a new folder
+   
+   download the "brighness_correction_demo.ipynb" to the folder
+   
+   open the ipynb file in jupyter notebook and click "run all cells button".
 
