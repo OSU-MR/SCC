@@ -30,7 +30,7 @@ Step to set the environment for SCIC in conda:
    open the ipynb file in jupyter notebook and click "run all cells button".
 
 
-# For install the package:
+# For installing the package:
 go to the path of the SCIC folder
 
 run the following command:
