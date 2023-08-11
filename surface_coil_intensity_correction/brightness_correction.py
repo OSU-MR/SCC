@@ -352,8 +352,8 @@ def getting_and_saving_correction_map(base_dir ,input_folder, output_folder, fol
                     else:
                         uncorrected_results_filename = os.path.join(full_dir_name_output, f"{filename}.uncorrected_results.npy")
 
-                    correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.correction_map.npy")
-                    inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.inversed_correction_map.npy")
+                    correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.image_correction_map.npy")
+                    inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.sensitivity_correction_map.npy")
                     quat_filename = os.path.join(full_dir_name_output, f"{filename}.quat.npy")
                 # Save grappa_results and correction_map_all to their respective files
                     os.makedirs(full_dir_name_output, exist_ok=True)
@@ -426,9 +426,9 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                     if filename.startswith('.ipynb_checkpoints'):
                         continue
                 
-                    correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.correction_map.npy")
+                    correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.image_correction_map.npy")
                     correction_map_all = np.load(correction_map_all_filename)
-                    inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.inversed_correction_map.npy")
+                    inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.sensitivity_correction_map.npy")
                     inversed_correction_map_all = np.load(inversed_correction_map_all_filename)
 
                     try:
@@ -475,26 +475,29 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                 width_ratios = [0.5, 9, 9, 9, 1]
 
                             try:
+                                #subdivide number 
+                                subdevide_num = 40
+                                delta_for_colorbar = 9
                                 # Create a GridSpec object
-                                gs = gridspec.GridSpec(1, ncols=ncols, width_ratios=width_ratios, figure=plt.figure(figsize=(auto_width,fig_h))) # Adjust the figure size as needed
+                                gs = gridspec.GridSpec(subdevide_num, ncols=ncols, width_ratios=width_ratios, figure=plt.figure(figsize=(auto_width,fig_h))) # Adjust the figure size as needed
 
                                 # Create subplots and colorbar axes
-                                cax1 = plt.subplot(gs[0, 0])
-                                ax1 = plt.subplot(gs[0, 1])
-                                ax2 = plt.subplot(gs[0, 2])
+                                cax1 = plt.subplot(gs[delta_for_colorbar:subdevide_num-delta_for_colorbar, 0])
+                                ax1 = plt.subplot(gs[0:subdevide_num, 1])
+                                ax2 = plt.subplot(gs[0:subdevide_num, 2])
 
                                 im1 = ax1.imshow(np.abs(correction_map_all[sli_idx,...]),cmap='jet')
                                 ax1.axis("off")
-                                ax1.set_title("correction map")
+                                ax1.set_title("image correction map")
 
                                 im2 = ax2.imshow(np.abs(inversed_correction_map_all[sli_idx,...]),cmap='jet')
                                 ax2.axis("off")
-                                ax2.set_title("inversed correction map")
+                                ax2.set_title("sensetivity correction map")
 
                                 if uncorrected_results is not None:
 
-                                    ax3 = plt.subplot(gs[0, 3])
-                                    ax4 = plt.subplot(gs[0, 4])
+                                    ax3 = plt.subplot(gs[0:subdevide_num, 3])
+                                    ax4 = plt.subplot(gs[0:subdevide_num, 4])
 
                                     uncorrected_img = img_normalize(uncorrected_results[sli_idx,...])
                                     im3 = ax3.imshow(uncorrected_img**1,vmax=1,cmap='gray')
@@ -508,13 +511,13 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                     ax4.set_title("uncorrected results ⊙ correction map")
 
                                     if corrected_results is not None:
-                                        ax5 = plt.subplot(gs[0, 5])
+                                        ax5 = plt.subplot(gs[0:subdevide_num, 5])
                                         corrected_img = img_normalize(corrected_results[sli_idx,...])
                                         im5 = ax5.imshow(corrected_img**1,cmap='gray',vmax=1)
                                         ax5.axis("off")
                                         ax5.set_title("corrected results\n(generated during\nsense reconstruction)")
                                 elif corrected_results is not None:
-                                    ax3 = plt.subplot(gs[0, 3])
+                                    ax3 = plt.subplot(gs[0:subdevide_num, 3])
                                     corrected_img = img_normalize(corrected_results[sli_idx,...])
                                     im3 = ax3.imshow(corrected_img**1,cmap='gray',vmax=1)
                                     ax3.axis("off")
@@ -524,9 +527,9 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                 # Display colorbar for the first subplot
                                 plt.colorbar(im1, cax=cax1)
                                 try:
-                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n")
+                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=0.80, ha='center')
                                 except:
-                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n")
+                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=0.80, ha='center')
 
                                 plt.tight_layout();plt.show()
 
@@ -538,17 +541,17 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                             #print(grappa_results_filename)
                             try:
                                 # Create a GridSpec object
-                                gs = gridspec.GridSpec(1, 5, width_ratios=[0.5, 9, 9, 9, 1], figure=plt.figure(figsize=(auto_width,fig_h))) # Adjust the figure size as needed
+                                gs = gridspec.GridSpec(50, 5, width_ratios=[0.5, 9, 9, 9, 1], figure=plt.figure(figsize=(auto_width,fig_h))) # Adjust the figure size as needed
 
                                 # Create subplots and colorbar axes
-                                ax1 = plt.subplot(gs[0, 1])
-                                cax1 = plt.subplot(gs[0, 0])
-                                ax2 = plt.subplot(gs[0, 2])
-                                ax3 = plt.subplot(gs[0, 3])
+                                ax1 = plt.subplot(gs[0:50, 1])
+                                cax1 = plt.subplot(gs[2:48, 0])
+                                ax2 = plt.subplot(gs[0:50, 2])
+                                ax3 = plt.subplot(gs[0:50, 3])
 
                                 im1 = ax1.imshow(np.abs(correction_map_all[sli_idx,...]),cmap='jet')
                                 ax1.axis("off")
-                                ax1.set_title("correction map")
+                                ax1.set_title("image correction map")
                                 
 
                                 uncorrected_img = img_normalize(uncorrected_results[sli_idx,...])
