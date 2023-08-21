@@ -3,14 +3,17 @@ import twixtools
 import numpy as np
 import os
 
-def readtwix_arry_all(data_path, filename):
+def readtwix_arry_all(data_path = None, filename = None, data_path_filename = None):
     '''
     given a rawdata file, read all the nessacery data from the file
     args:
         data_path: path of the rawdata
         filename: name of the rawdata
     '''
-    twix = twixtools.read_twix(os.path.join(data_path, filename), keep_syncdata_and_acqend=True)
+    if data_path_filename is not None:
+        twix = twixtools.read_twix(data_path_filename, keep_syncdata_and_acqend=True)
+    elif data_path is not None and filename is not None:
+        twix = twixtools.read_twix(os.path.join(data_path, filename), keep_syncdata_and_acqend=True)
     #mapped = twixtools.map_twix(twix[-1])
     print('\nnumber of separate scans (multi-raid):', len(twix))
     

@@ -8,16 +8,6 @@ from helper_functions.calculating_correction_map import calculate_correction_map
 from helper_functions.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
 from matplotlib import pyplot as plt
 
-#######################################
-def defaultProcedure(img_body_coils, img_surface_coils, ksp, ref_padded, noise_kspace, dim_info_noise):
-
-    img_body_coils = rms_comb(img_body_coils,0)
-    img_surface_coils = rms_comb(img_surface_coils,0)
-
-    return img_body_coils, img_surface_coils, ksp, ref_padded
-
-#######################################
-
 def rotate_images_for_LGE(results, correction_map_all,inversed_correction_map_all, quat, filename):
 
     read_dir , phase_dir, _ = quaternion_to_directions(quat)
@@ -127,10 +117,139 @@ def middle_slice(data,data_dimensions, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col
 
     return np.squeeze(data[tuple(slices)]),data_dimensions  # Squeeze to remove the dimensions that have a length of 1
 
+def target_path_generator(base_dir, input_folder, output_folder, input_subfolders):
+    data_path_names = []
+    data_path_names_output = []
+    input_folder = os.path.join(base_dir, input_folder)
+    output_folder = os.path.join(base_dir, output_folder)
+    input_subfolders = os.listdir(input_folder) if input_subfolders is None else input_subfolders
+    for input_subfolder in input_subfolders:
+    # Construct the full path to the directory
+        full_dir_name = os.path.join(input_folder , input_subfolder)
+        full_dir_name_output = os.path.join(output_folder , input_subfolder)
+
+    # Check if it's a directory
+        if os.path.isdir(full_dir_name):
+        # Loop over all files in the directory
+            for filename in os.listdir(full_dir_name):
+            # Check if the file is a .dat file
+                if filename.endswith(".dat"):
+                    data_path_names.append(os.path.join(full_dir_name, filename))
+                    data_path_names_output.append(os.path.join(full_dir_name_output, filename))
+    return data_path_names, data_path_names_output
+
+def rawdata_reader(data_path_filename):
+    
+    # start reading the data if these are no reference data or noise data, then the reference data or noise data will be returned as None
+    twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename=data_path_filename)
+    
+    # print("\n*******************dim_info_org**********************")
+    # dim_info_zip = zip( dim_info_org , data_org.shape )
+    # for i in dim_info_zip:
+    #     print(i,end=' ')
+    # print("\n")
+
+    #this will squeeze the dimensions
+    data = data_org.squeeze()
+    dim_info_data = dim_info_org.copy()
+
+    #end of reading the data
+    
+    # start 
+    image_3D_body_coils , image_3D_surface_coils = generate_3D_data(mapped_data)
+    
+    try:
+        num_sli = data.shape[dim_info_org.index('Sli')]
+    except:
+        num_sli = 1
+    print('num_sli in the rawdata',num_sli)
+
+    return twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli
+
+def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom'):
+
+    img_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
+    sensitivity_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
+    low_resolution_surface_coil_imgs = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2),dtype=np.complex64)
+    img_quats = []
+
+    for n in range(num_sli):
+        img_correction_map_all,img_quat,x2d,sensitivity_correction_map_all = calculating_correction_maps(auto_rotation,
+                                                                                                                        twix, dim_info_data, 
+                                                                                                                        data, image_3D_body_coils, 
+                                                                                                                        image_3D_surface_coils, 
+                                                                                                                        num_sli, img_correction_map_all,
+                                                                                                                        sensitivity_correction_map_all,
+                                                                                                                        n)
+        low_resolution_surface_coil_imgs[n,...] = x2d
+        img_quats.append(img_quat)
+
+    return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
+
+def auto_image_rotation(sense_recon_results, img_quats, auto_rotation = 'Dicom', img_correction_maps = None, sensitivity_correction_maps = None,filename = None):
+    num_sli = sense_recon_results.shape[0]
+
+    sense_recon_results_rotated = np.zeros((sense_recon_results.shape),dtype=np.complex64)
+    if auto_rotation == 'Dicom':
+        for n in range(num_sli):
+            sense_recon_results_rotated = sense_img_rotation(sense_recon_results_rotated, sense_recon_results[n,...], img_quats[n], num_sli, n, auto_rotation = auto_rotation)
+        return sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps
+    
+    if auto_rotation == 'LGE':
+        sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps = rotate_images_for_LGE(sense_recon_results, 
+                                                                                                img_correction_maps, 
+                                                                                                sensitivity_correction_maps, 
+                                                                                                img_quats[0], filename)
+        return sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps
+                
+
+    
+
+
+def sense_img_rotation(sense_recon_results, sense_reconstructed_img, img_quat, num_sli, n, auto_rotation = 'Dicom'):
+    if auto_rotation == 'Dicom':
+        sense_reconstructed_img = np.rot90(sense_reconstructed_img,-1)
+        sense_reconstructed_img = rotate_image(sense_reconstructed_img,img_quat)
+    try:
+        sense_recon_results[n,...] = sense_reconstructed_img
+    except:
+        sense_recon_results = np.zeros((num_sli,sense_reconstructed_img.shape(-1),sense_reconstructed_img.shape(-2)),dtype=np.complex64)
+        sense_recon_results[n,...] = sense_reconstructed_img              
+
+    return sense_recon_results
+
+def save_sense_recon_results(full_dir_name_output,sense_recon_results, img_correction_maps, sensitivity_correction_maps, quat, apply_correction_during_sense_recon):
+    full_dir_name_output = full_dir_name_output[:-4]
+# Save the results
+    if apply_correction_during_sense_recon:
+        corrected_results_filename = full_dir_name_output + ".corrected_sense_results.npy"
+    else:
+        uncorrected_results_filename = full_dir_name_output + ".uncorrected_results.npy"
+
+    correction_map_all_filename = full_dir_name_output + ".image_correction_map.npy"
+    inversed_correction_map_all_filename = full_dir_name_output + ".sensitivity_correction_map.npy"
+    quat_filename = full_dir_name_output + ".quat.npy"
+# Save grappa_results and correction_map_all to their respective files
+    os.makedirs(full_dir_name_output, exist_ok=True)
+    if apply_correction_during_sense_recon:
+        np.save(corrected_results_filename, sense_recon_results)
+    else:
+        np.save(uncorrected_results_filename, sense_recon_results)
+    np.save(correction_map_all_filename, img_correction_maps)
+    np.save(inversed_correction_map_all_filename, sensitivity_correction_maps)
+    
+    #save quat and slc_dir for future debugging
+    try:
+        np.save(quat_filename, quat[0])   
+    except:
+        ...
+    
+
+
 def brightness_correction_map_generator(data_path, filename_matched, auto_rotation = 'Dicom', apply_correction_during_sense_recon = False, CustomProcedure = None):
     
     #twix, data_org, dim_info_org,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
-    twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path, filename_matched)
+    twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path = data_path, filename = filename_matched)
     print("dim_info_org\n",dim_info_org,'\n',data_org.shape)
 
     data = data_org.squeeze()
@@ -198,14 +317,14 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
                 ref_padded = remove_RO_oversamling(ref_padded,axis_RO=2)
 
                 ###interpolation starts here
-                correction_map_all, ksp, ref_padded, img_quat, normal, x2d, inversed_correction_map_all = calculating_correction_maps(auto_rotation, 
+                correction_map_all, ksp, ref_padded, img_quat, x2d, inversed_correction_map_all = calculating_correction_maps(auto_rotation, 
                                                                                                                                     CustomProcedure, 
                                                                                                                                     twix, dim_info_org, 
                                                                                                                                     data, image_3D_body_coils, 
                                                                                                                                     image_3D_surface_coils, 
                                                                                                                                     num_sli, correction_map_all,
                                                                                                                                     inversed_correction_map_all,
-                                                                                                                                    n,ksp,ref_padded,noise_kspace, dim_info_noise)
+                                                                                                                                    n)#,ksp,ref_padded,noise_kspace, dim_info_noise)
                 ###interpolation ends here with correction map and inversed correction map gnerated
 
                 if ref_padded is None:
@@ -235,7 +354,7 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
                     recon_results[n,...] = C
         except Exception as e:
             print(e)
-            correction_map_all, ksp, ref_padded, img_quat, normal, x2d, inversed_correction_map_all = calculating_correction_maps(auto_rotation, 
+            correction_map_all, ksp, ref_padded, img_quat, x2d, inversed_correction_map_all = calculating_correction_maps(auto_rotation, 
                                                                                                                                       CustomProcedure, 
                                                                                                                                       twix, dim_info_org, 
                                                                                                                                       data, image_3D_body_coils, 
@@ -248,36 +367,21 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
             recon_results[n,...] = x2d
 
     #return A,B,grappa_results,correction_map_all
-    return recon_results,correction_map_all,img_quat,normal, inversed_correction_map_all, apply_correction_during_sense_recon
+    return recon_results,correction_map_all,img_quat, inversed_correction_map_all, apply_correction_during_sense_recon
 
-def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_org, 
+def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
                                 num_sli, correction_map_all,inversed_correction_map_all, n,
-                                ksp = None , ref_padded = None , noise_kspace = None , dim_info_noise = None ):
-    Zi_body_coils, Zi_surface_coils, img_quat , normal= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
+                                ):
+    
+    Zi_body_coils, Zi_surface_coils, img_quat , _= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
     inter_img_body_coils, inter_img_surface_coils = remove_edges(Zi_body_coils,Zi_surface_coils)
     inter_img_body_coils = inter_img_body_coils.transpose([2,0,1])
     inter_img_surface_coils = inter_img_surface_coils.transpose([2,0,1])
 
-    #see if these is a function called CustomProcedure else use defaultProcedure
-    try:
-        inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = CustomProcedure(inter_img_body_coils,
-                                                                                                         inter_img_surface_coils, 
-                                                                                                         ksp, ref_padded, noise_kspace, dim_info_noise)
-        #print with green color
-        print("\033[92m" + "custom procedure found and used!" + "\033[0m")
-    except Exception as e:
-        if CustomProcedure != None:
-            #print with red color
-            print("\033[91m" + "custom procedure found, but there is something wrong with it. Use default procedure!" + "\033[0m")
-            print(e)
-        else:
-            #print with yellow color
-            print("\033[93m" + "no custom procedure found, use default procedure!" + "\033[0m")
-        inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = defaultProcedure(inter_img_body_coils,
-                                                                                                          inter_img_surface_coils, 
-                                                                                                          ksp, ref_padded, noise_kspace, dim_info_noise)
-        
+    inter_img_body_coils = rms_comb(inter_img_body_coils,0)
+    inter_img_surface_coils = rms_comb(inter_img_surface_coils,0)
+
 
     x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
 
@@ -289,7 +393,49 @@ def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_o
                                                                                         correction_map_all, inversed_correction_map_all, n, 
                                                                                         img_quat, correction_map, inversed_correction_map)
                                                                         
-    return correction_map_all,ksp,ref_padded,img_quat,normal,x2d,inversed_correction_map_all
+    return correction_map_all,img_quat,x2d,inversed_correction_map_all
+
+# def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_org, 
+#                                 data, image_3D_body_coils, image_3D_surface_coils, 
+#                                 num_sli, correction_map_all,inversed_correction_map_all, n,
+#                                 ksp = None , ref_padded = None , noise_kspace = None , dim_info_noise = None ):
+    
+#     Zi_body_coils, Zi_surface_coils, img_quat , normal= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
+#     inter_img_body_coils, inter_img_surface_coils = remove_edges(Zi_body_coils,Zi_surface_coils)
+#     inter_img_body_coils = inter_img_body_coils.transpose([2,0,1])
+#     inter_img_surface_coils = inter_img_surface_coils.transpose([2,0,1])
+
+#     #see if these is a function called CustomProcedure else use defaultProcedure
+#     try:
+#         inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = CustomProcedure(inter_img_body_coils,
+#                                                                                                          inter_img_surface_coils, 
+#                                                                                                          ksp, ref_padded, noise_kspace, dim_info_noise)
+#         #print with green color
+#         print("\033[92m" + "custom procedure found and used!" + "\033[0m")
+#     except Exception as e:
+#         if CustomProcedure != None:
+#             #print with red color
+#             print("\033[91m" + "custom procedure found, but there is something wrong with it. Use default procedure!" + "\033[0m")
+#             print(e)
+#         else:
+#             #print with yellow color
+#             print("\033[93m" + "no custom procedure found, use default procedure!" + "\033[0m")
+#         inter_img_body_coils, inter_img_surface_coils, ksp, ref_padded = defaultProcedure(inter_img_body_coils,
+#                                                                                                           inter_img_surface_coils, 
+#                                                                                                           ksp, ref_padded, noise_kspace, dim_info_noise)
+        
+
+#     x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
+
+
+#     *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=1e-1)
+#     *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=1e-1)
+
+#     correction_map_all, inversed_correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
+#                                                                                         correction_map_all, inversed_correction_map_all, n, 
+#                                                                                         img_quat, correction_map, inversed_correction_map)
+                                                                        
+#     return correction_map_all,ksp,ref_padded,img_quat,normal,x2d,inversed_correction_map_all
 
 def correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, correction_map_all
                             , inversed_correction_map_all, n, img_quat, correction_map, inversed_correction_map):
@@ -338,7 +484,7 @@ def getting_and_saving_correction_map(base_dir ,input_folder, output_folder, fol
             #if filename.find('SAX') != -1:#this is a file filter uncomment this line and change the SAX to the keyword you want to filter
                 # Construct the full file path
                     #full_file_path = os.path.join(full_dir_name, filename)
-                    recon_results, correction_map_all, quat, _, inversed_correction_map_all, apply_correction_during_sense_recon = brightness_correction_map_generator(full_dir_name, filename, 
+                    recon_results, correction_map_all, quat, inversed_correction_map_all, apply_correction_during_sense_recon = brightness_correction_map_generator(full_dir_name, filename, 
                                                                                                       auto_rotation,apply_correction_during_sense_recon,
                                                                                                       CustomProcedure)
                     if auto_rotation == 'LGE':
@@ -408,7 +554,7 @@ def img_normalize(uncorrected_img):
 
 import matplotlib.gridspec as gridspec
 
-def displaying_results(base_dir ,input_folder, output_folder, folder_names = None, sli_idx = 0, avg_idx = None, fig_h = 9, debug = False):
+def displaying_results(base_dir ,input_folder, output_folder, folder_names = None, sli_idx = 0, avg_idx = None, fig_h = 9, show_both = False):
     input_folder = os.path.join(base_dir, input_folder)
     output_folder = os.path.join(base_dir, output_folder)
     folder_names = os.listdir(input_folder) if folder_names is None else folder_names
@@ -426,6 +572,8 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                     if filename.startswith('.ipynb_checkpoints'):
                         continue
                 
+                    filename = filename[:-4]
+
                     correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.image_correction_map.npy")
                     correction_map_all = np.load(correction_map_all_filename)
                     inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.sensitivity_correction_map.npy")
@@ -458,7 +606,7 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                         auto_width = 18
 
 
-                    if debug:
+                    if show_both:
 
                         if (correction_map_all.shape[0]-1)>=sli_idx:
                             #print(results_filename)
@@ -477,12 +625,12 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                             try:
                                 #subdivide number 
                                 subdevide_num = 40
-                                delta_for_colorbar = 9
+
                                 # Create a GridSpec object
                                 gs = gridspec.GridSpec(subdevide_num, ncols=ncols, width_ratios=width_ratios, figure=plt.figure(figsize=(auto_width,fig_h))) # Adjust the figure size as needed
 
                                 # Create subplots and colorbar axes
-                                cax1 = plt.subplot(gs[delta_for_colorbar:subdevide_num-delta_for_colorbar, 0])
+                                
                                 ax1 = plt.subplot(gs[0:subdevide_num, 1])
                                 ax2 = plt.subplot(gs[0:subdevide_num, 2])
 
@@ -495,6 +643,7 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                 ax2.set_title("sensetivity correction map")
 
                                 if uncorrected_results is not None:
+                                    delta_for_colorbar = 9
 
                                     ax3 = plt.subplot(gs[0:subdevide_num, 3])
                                     ax4 = plt.subplot(gs[0:subdevide_num, 4])
@@ -516,21 +665,29 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                         im5 = ax5.imshow(corrected_img**1,cmap='gray',vmax=1)
                                         ax5.axis("off")
                                         ax5.set_title("corrected results\n(generated during\nsense reconstruction)")
+
+                                    try:
+                                        plt.suptitle("1path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=0.80, ha='center')
+                                    except:
+                                        plt.suptitle("1path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=0.80, ha='center')
+
                                 elif corrected_results is not None:
+                                    delta_for_colorbar = 1
+
                                     ax3 = plt.subplot(gs[0:subdevide_num, 3])
                                     corrected_img = img_normalize(corrected_results[sli_idx,...])
                                     im3 = ax3.imshow(corrected_img**1,cmap='gray',vmax=1)
                                     ax3.axis("off")
                                     ax3.set_title("corrected results\n(generated during\nsense reconstruction)")
 
-                            
+                                    try:
+                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=1.0, ha='center')
+                                    except:
+                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=1.0, ha='center')
+
+                                cax1 = plt.subplot(gs[delta_for_colorbar:subdevide_num-delta_for_colorbar, 0])
                                 # Display colorbar for the first subplot
                                 plt.colorbar(im1, cax=cax1)
-                                try:
-                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=0.80, ha='center')
-                                except:
-                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=0.80, ha='center')
-
                                 plt.tight_layout();plt.show()
 
                             except Exception as e:
