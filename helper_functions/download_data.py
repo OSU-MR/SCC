@@ -115,13 +115,13 @@ def install_twixtools():
     # Replace twix_map.py with the one in current directory
     print("Replacing twix_map.py...")
     try:
-        copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
+        copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
     except FileNotFoundError:
         #download the modified twixtools
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
-        download_file_from_figshare('./',url_map_twix)
-        copy_file('map_twix.py', './twixtools-master/twixtools/map_twix.py')
-        os.remove("map_twix.py")
+        download_file_from_figshare('./helper_functions/',url_map_twix)
+        copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
+        os.remove('./helper_functions/map_twix.py')
     
     
     # Check and install numpy if required

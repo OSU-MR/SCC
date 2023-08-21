@@ -1,11 +1,11 @@
 import os
 import numpy as np
-from surface_coil_intensity_correction.preprocess import ifftnd, rms_comb,remove_RO_oversamling
-from surface_coil_intensity_correction.read_data import readtwix_arry_all
-from surface_coil_intensity_correction.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
-from surface_coil_intensity_correction.calculating_correction_map import calculate_correction_map, normalize_images
+from helper_functions.preprocess import ifftnd, rms_comb,remove_RO_oversamling
+from helper_functions.read_data import readtwix_arry_all
+from helper_functions.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
+from helper_functions.calculating_correction_map import calculate_correction_map, normalize_images
 #from brightness_correction.recon import grappa_reconstruction
-from surface_coil_intensity_correction.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
+from helper_functions.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
 from matplotlib import pyplot as plt
 
 #######################################
