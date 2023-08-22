@@ -162,7 +162,15 @@ def estimate_noise_from_data(data, axis_spatial = [0,1,2], axis_ch = 3):
 def compress_data_with_pca(data, channel_keep, axis_CH = 0, extra_data = None, extra_axis_CH = 0, extra_data2 = None, extra_axis_CH2 = 0):
     # input: data; channel_keep (number of virtual channels kept); axis_CH specify the coil dim
     # PCA coil compression
-    print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
+    if channel_keep is None: 
+        #print with yellow color
+        print('\033[93m'+'Skipping coil compression since the channel_keep is not specified'+'\033[0m')
+        return data, extra_data, extra_data2, None
+    elif data.shape[axis_CH] <= channel_keep:
+        print('\033[91m'+'Warning, the number of channels is equal or less than the number of channels kept.\n Check your "channel_keep" parameters is you want to do coil compression'+'\033[0m')
+        return data, extra_data, extra_data2, None
+    else:
+        print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
     data = np.moveaxis(data, axis_CH, 0)
     N_data = data.shape
     data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])

@@ -86,7 +86,7 @@ def move_dimension_to_front_info(all_dimensions, dim_to_move):
         print(f"Warning: Dimension '{dim_to_move}' not found.")
     return all_dimensions
 
-def middle_slice(data,data_dimensions, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'], dim_to_set_to_zero = ['Phs','Set']):
+def data_reduction(data,data_dimensions, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'], dim_to_set_to_zero = ['Phs','Set']):
     ###all_dimensions = ['Ide', 'Idd', 'Idc', 'Idb', 'Ida', 'Seg', 'Set', 'Rep','Phs', 'Eco', 'Par', 'Sli', 'Ave', 'Lin', 'Cha', 'Col']
     for dim in dim_to_set_to_zero:
         if dim in data_dimensions:
@@ -165,6 +165,26 @@ def rawdata_reader(data_path_filename):
     print('num_sli in the rawdata',num_sli)
 
     return twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli
+
+def low_resolution_img_interpolator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom'):
+
+    img_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
+    sensitivity_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
+    low_resolution_surface_coil_imgs = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2),dtype=np.complex64)
+    img_quats = []
+
+    for n in range(num_sli):
+        img_correction_map_all,img_quat,x2d,sensitivity_correction_map_all = calculating_correction_maps(auto_rotation,
+                                                                                                                        twix, dim_info_data, 
+                                                                                                                        data, image_3D_body_coils, 
+                                                                                                                        image_3D_surface_coils, 
+                                                                                                                        num_sli, img_correction_map_all,
+                                                                                                                        sensitivity_correction_map_all,
+                                                                                                                        n)
+        low_resolution_surface_coil_imgs[n,...] = x2d
+        img_quats.append(img_quat)
+
+    return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
 def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom'):
 
@@ -299,7 +319,7 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
     # print("\n")
 
 
-    data,dim_info_org = middle_slice(data,data_dimensions = dim_info_org, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'])
+    data,dim_info_org = data_reduction(data,data_dimensions = dim_info_org, dims_to_keep = ['Sli', 'Lin', 'Cha', 'Col'])
 
     # print("*******************dim_info_org after reducing dimensions**********************")
     # dim_info_zip = zip( dim_info_org , data.shape )
@@ -368,6 +388,41 @@ def brightness_correction_map_generator(data_path, filename_matched, auto_rotati
 
     #return A,B,grappa_results,correction_map_all
     return recon_results,correction_map_all,img_quat, inversed_correction_map_all, apply_correction_during_sense_recon
+
+def single_img_interpolation(twix, image_3D_body_coils, image_3D_surface_coils, 
+                                num_sli, n,
+                                ):
+    
+
+    Zi_body_coils, Zi_surface_coils, img_quat , _= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
+    inter_img_body_coils, inter_img_surface_coils = remove_edges(Zi_body_coils,Zi_surface_coils)
+    inter_img_body_coils = inter_img_body_coils.transpose([2,0,1])
+    inter_img_surface_coils = inter_img_surface_coils.transpose([2,0,1])
+
+
+    return inter_img_body_coils, inter_img_surface_coils, img_quat
+
+def single_correction_map_generator(auto_rotation, img_quat, dim_info_org, 
+                                data, inter_img_body_coils, inter_img_surface_coils, 
+                                num_sli, correction_map_all,inversed_correction_map_all, n,
+                                ):
+    
+
+    inter_img_body_coils = rms_comb(inter_img_body_coils,0)
+    inter_img_surface_coils = rms_comb(inter_img_surface_coils,0)
+
+
+    x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
+
+
+    *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=1e-1)
+    *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=1e-1)
+
+    correction_map_all, inversed_correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
+                                                                                        correction_map_all, inversed_correction_map_all, n, 
+                                                                                        img_quat, correction_map, inversed_correction_map)
+                                                                        
+    return correction_map_all,img_quat,x2d,inversed_correction_map_all
 
 def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
