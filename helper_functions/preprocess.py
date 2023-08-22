@@ -159,29 +159,42 @@ def estimate_noise_from_data(data, axis_spatial = [0,1,2], axis_ch = 3):
 
 # coil compression using PCA
 #from numpy import linalg as LA
-def compress_data_with_pca(data, chanel_keep, axis_CH = 0, extra_data = None):
+def compress_data_with_pca(data, channel_keep, axis_CH = 0, extra_data = None, extra_axis_CH = 0, extra_data2 = None, extra_axis_CH2 = 0):
     # input: data; channel_keep (number of virtual channels kept); axis_CH specify the coil dim
     # PCA coil compression
-    print('compress ',data.shape[axis_CH],' to ',chanel_keep,' channels')
+    print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
     data = np.moveaxis(data, axis_CH, 0)
     N_data = data.shape
     data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
     data = np.transpose(data, [1, 0])
     cov_matrix = np.matmul(np.matrix.getH(data),data)
     u,s,vh = LA.svd(cov_matrix)
-    data_compressed = preform_compressing(data, chanel_keep, axis_CH, N_data, u)
+    data_compressed = preform_compressing(data, channel_keep, axis_CH, N_data, u)
     if extra_data is None:    
-        return data_compressed
+        return data_compressed, u
+    elif extra_data2 is None:
+        extra_data_compressed = preform_compressing(extra_data, channel_keep, extra_axis_CH, N_data, u, reshape_flag = True)
+        return data_compressed, extra_data_compressed, u
     else:
-        extra_data_compressed = preform_compressing(extra_data, chanel_keep, axis_CH, N_data, u)
-        return data_compressed, extra_data_compressed
+        extra_data_compressed  = preform_compressing(  extra_data, channel_keep,  extra_axis_CH, N_data, u, reshape_flag = True)
+        extra_data2_compressed = preform_compressing( extra_data2, channel_keep, extra_axis_CH2, N_data, u, reshape_flag = True)
+        return data_compressed, extra_data_compressed, extra_data2_compressed, u
 
-def preform_compressing(data, chanel_keep, axis_CH, N_data, u):
+def preform_compressing(data, channel_keep, axis_CH, N_data, u, reshape_flag = False):
+    if reshape_flag:
+        print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
+        data = np.moveaxis(data, axis_CH, 0)
+        N_data = data.shape
+        data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
+        data = np.transpose(data, [1, 0])
+
+    #print("data.shape:",data.shape)
+    #print("u: ",u.shape)
     data = np.matmul(data, u)
-    data_compressed = data[:,0:chanel_keep]
+    data_compressed = data[:,0:channel_keep]
     data_compressed = np.transpose(data_compressed, [1,0])
-    data_compressed = np.reshape(data_compressed, [chanel_keep, int(np.product(N_data)/N_data[0])])
-    data_compressed = np.reshape(data_compressed, list([chanel_keep]) + list(N_data[1:]))
+    data_compressed = np.reshape(data_compressed, [channel_keep, int(np.product(N_data)/N_data[0])])
+    data_compressed = np.reshape(data_compressed, list([channel_keep]) + list(N_data[1:]))
     data_compressed = np.moveaxis(data_compressed, 0, axis_CH)
     return data_compressed
 
