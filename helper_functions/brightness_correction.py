@@ -186,7 +186,7 @@ def low_resolution_img_interpolator(twix, image_3D_body_coils, image_3D_surface_
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
-def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom'):
+def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom', lamb = 1e-1):
 
     img_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
     sensitivity_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
@@ -200,7 +200,7 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
                                                                                                                         image_3D_surface_coils, 
                                                                                                                         num_sli, img_correction_map_all,
                                                                                                                         sensitivity_correction_map_all,
-                                                                                                                        n)
+                                                                                                                        n, lamb = lamb)
         low_resolution_surface_coil_imgs[n,...] = x2d
         img_quats.append(img_quat)
 
@@ -426,7 +426,7 @@ def single_correction_map_generator(auto_rotation, img_quat, dim_info_org,
 
 def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
-                                num_sli, correction_map_all,inversed_correction_map_all, n,
+                                num_sli, correction_map_all,inversed_correction_map_all, n, lamb = 1e-1
                                 ):
     
     Zi_body_coils, Zi_surface_coils, img_quat , _= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
@@ -441,8 +441,8 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
     x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
 
 
-    *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=1e-1)
-    *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=1e-1)
+    *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=lamb)
+    *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=lamb)
 
     correction_map_all, inversed_correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
                                                                                         correction_map_all, inversed_correction_map_all, n, 
