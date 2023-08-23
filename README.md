@@ -2,7 +2,7 @@
 
 
 
-# Surface Coil Intensity Correction
+# Surface Coil Intensity Correction (SCC)
 --beta version--
 
 
@@ -21,7 +21,7 @@
 
 
 
-# For installing the SCC package (optional)
+# For installing the package content (optional)
 Go to the path of the SCC folder and run the following command: `pip install -e` .
    
 
