@@ -15,9 +15,9 @@
 
 2. Clone the GitHub repository to your local workstation
 
-3. Open `brighness_correction_demo.ipynb` in Anaconda, VS Code, etc.
+3. Open `brightness_correction_demo.ipynb` in Anaconda, VS Code, etc.
    * Make the SCC environment is selected
-   * Execute all cells in `brighness_correction_demo.ipynb`
+   * Execute all cells in `brightness_correction_demo.ipynb`
 
 
 
