@@ -206,21 +206,21 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
-def auto_image_rotation(sense_recon_results, img_quats, auto_rotation = 'Dicom', img_correction_maps = None, sensitivity_correction_maps = None,filename = None):
+def auto_image_rotation(sense_recon_results, img_quats, auto_rotation = 'Dicom', img_correction_map = None, sens_correction_map = None,filename = None):
     num_sli = sense_recon_results.shape[0]
 
     sense_recon_results_rotated = np.zeros((sense_recon_results.shape),dtype=np.complex64)
     if auto_rotation == 'Dicom':
         for n in range(num_sli):
             sense_recon_results_rotated = sense_img_rotation(sense_recon_results_rotated, sense_recon_results[n,...], img_quats[n], num_sli, n, auto_rotation = auto_rotation)
-        return sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps
+        return sense_recon_results_rotated, img_correction_map, sens_correction_map
     
     if auto_rotation == 'LGE':
-        sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps = rotate_images_for_LGE(sense_recon_results, 
-                                                                                                img_correction_maps, 
-                                                                                                sensitivity_correction_maps, 
+        sense_recon_results_rotated, img_correction_map, sens_correction_map = rotate_images_for_LGE(sense_recon_results, 
+                                                                                                img_correction_map, 
+                                                                                                sens_correction_map, 
                                                                                                 img_quats[0], filename)
-        return sense_recon_results_rotated, img_correction_maps, sensitivity_correction_maps
+        return sense_recon_results_rotated, img_correction_map, sens_correction_map
                 
 
     
@@ -238,7 +238,7 @@ def sense_img_rotation(sense_recon_results, sense_reconstructed_img, img_quat, n
 
     return sense_recon_results
 
-def save_sense_recon_results(full_dir_name_output,sense_recon_results, img_correction_maps, sensitivity_correction_maps, quat, apply_correction_during_sense_recon):
+def save_sense_recon_results(full_dir_name_output,sense_recon_results, img_correction_map, sens_correction_map, quat, apply_correction_during_sense_recon):
     full_dir_name_output = full_dir_name_output[:-4]
 # Save the results
     if apply_correction_during_sense_recon:
@@ -255,8 +255,8 @@ def save_sense_recon_results(full_dir_name_output,sense_recon_results, img_corre
         np.save(corrected_results_filename, sense_recon_results)
     else:
         np.save(uncorrected_results_filename, sense_recon_results)
-    np.save(correction_map_all_filename, img_correction_maps)
-    np.save(inversed_correction_map_all_filename, sensitivity_correction_maps)
+    np.save(correction_map_all_filename, img_correction_map)
+    np.save(inversed_correction_map_all_filename, sens_correction_map)
     
     #save quat and slc_dir for future debugging
     try:
@@ -706,25 +706,25 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                     uncorrected_img = img_normalize(uncorrected_results[sli_idx,...])
                                     im3 = ax3.imshow(uncorrected_img**1,vmax=1,cmap='gray')
                                     ax3.axis("off")
-                                    ax3.set_title("before correction")
+                                    ax3.set_title("uncorrected image")
 
                                     corrected_img = np.multiply(correction_map_all[sli_idx,...],uncorrected_results[sli_idx,...])
                                     corrected_img = img_normalize(corrected_img)
                                     im4 = ax4.imshow(corrected_img**1,cmap='gray',vmax=1)
                                     ax4.axis("off")
-                                    ax4.set_title("uncorrected results ⊙ correction map")
+                                    ax4.set_title("corrected with\nimage correction map")
 
                                     if corrected_results is not None:
                                         ax5 = plt.subplot(gs[0:subdevide_num, 5])
                                         corrected_img = img_normalize(corrected_results[sli_idx,...])
                                         im5 = ax5.imshow(corrected_img**1,cmap='gray',vmax=1)
                                         ax5.axis("off")
-                                        ax5.set_title("corrected results\n(generated during\nsense reconstruction)")
+                                        ax5.set_title("corrected with\nsensitivity correction map")
 
                                     try:
-                                        plt.suptitle("1path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=0.80, ha='center')
+                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quaternions: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=0.80, ha='center')
                                     except:
-                                        plt.suptitle("1path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=0.80, ha='center')
+                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=0.80, ha='center')
 
                                 elif corrected_results is not None:
                                     delta_for_colorbar = 1
@@ -733,10 +733,10 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                     corrected_img = img_normalize(corrected_results[sli_idx,...])
                                     im3 = ax3.imshow(corrected_img**1,cmap='gray',vmax=1)
                                     ax3.axis("off")
-                                    ax3.set_title("corrected results\n(generated during\nsense reconstruction)")
+                                    ax3.set_title("corrected with\nsensitivity correction map")
 
                                     try:
-                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=1.0, ha='center')
+                                        plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quaternions: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec)+"\n\n", x=0.5, y=1.0, ha='center')
                                     except:
                                         plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + "\n\n", x=0.5, y=1.0, ha='center')
 
@@ -781,7 +781,7 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                                 # Display colorbar for the first subplot
                                 plt.colorbar(im1, cax=cax1)
                                 try:
-                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quat: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec))
+                                    plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename + '\n' +"quaternions: "+str(quat)+"\n"+"slice vector: "+str(slc_dir_vec))
                                 except:
                                     plt.suptitle("path to file: " + full_dir_name_output + "\n" + "file name: " + filename)
 
