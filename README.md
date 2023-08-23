@@ -6,24 +6,22 @@
 --beta version--
 
 
-1. create a new environment in conda and activate it:
-   * conda create --name SCC python=3.8
-   * conda activate SCC
-   * conda install jupyterlab
-   * conda install ipykernel
-   * python -m ipykernel install --user --name=SCC
+1. Create a new environment named SCC in conda and activate it:
+   * `conda create --name SCC python=3.8`
+   * `conda activate SCC`
+   * `conda install jupyterlab`
+   * `conda install ipykernel`
+   * `python -m ipykernel install --user --name=SCC`
 
-2. Clone the repository
+2. Clone the GitHub repository to your local workstation
 
-3. Open brighness_correction_demo.ipynb in Anaconda, VS Code, etc.
+3. Open `brighness_correction_demo.ipynb` in Anaconda, VS Code, etc.
    * Make the SCC environment is selected
-   * Execute all cells in brighness_correction_demo.ipynb
+   * Execute all cells in `brighness_correction_demo.ipynb`
 
 
 
-# For installing the package (optional)
-go to the path of the SCC folder
-run the following command:
-pip install -e .
+# For installing the SCC package (optional)
+Go to the path of the SCC folder and run the following command: `pip install -e` .
    
 
