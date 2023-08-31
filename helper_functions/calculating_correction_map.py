@@ -33,12 +33,12 @@ def calculate_correction_map(A,
 # Operator to take difference across rows
     D1 = diags([np.ones(n2), -np.ones(n2)], [0, 1], shape=(n2, n2))
     D1 = D1.tolil()  # Convert to LIL format for efficient row operations
-    D1[0, -1] = -1
+    D1[-1, 0] = -1
 
 # Operator to take difference across columns
     D2 = diags([np.ones(n1), -np.ones(n1)], [0, 1], shape=(n1, n1))
     D2 = D2.tolil()  # Convert to LIL format for efficient row operations
-    D2[0, -1] = -1
+    D2[-1, 0] = -1
 
 # The final operator that computes finite differences
     D = vstack([kron(eye(n1), D1), kron(D2, eye(n2))])
