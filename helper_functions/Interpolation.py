@@ -150,7 +150,10 @@ def interpolation(twix, num_sli, n, input_data):
 
     output_data = []
     for data in input_data:
-        output_data.append(cut_3D_cube(data, points_3d_xyz, points_2d_xyz))
+        if data is not None:
+            output_data.append(cut_3D_cube(data, points_3d_xyz, points_2d_xyz))
+        else:
+            output_data.append(None)
 
     #print("body_coils",body_coils.shape)         #body_coils (150, 512, 2)
     #print("surface_coils",surface_coils.shape)   #surface_coils (150, 512, 30)

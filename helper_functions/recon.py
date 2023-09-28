@@ -38,6 +38,8 @@ def complex_image_normalization(img):
 
 
 def remove_edges(data):
+    if data is None:
+        return None
     #remove edges [1/4, ... , 1/4]
     data = abs(data[:,int(data.shape[1]//4):-int(data.shape[1]//4)])#**0.4
     #flip the data to the right direction
