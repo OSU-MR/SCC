@@ -37,14 +37,27 @@ def complex_image_normalization(img):
     return img
 
 
-def remove_edges(Zi_body_coils,Zi_surface_coils):
-    inter_img_body_coils = abs(Zi_body_coils[:,int(Zi_body_coils.shape[1]//4):-int(Zi_body_coils.shape[1]//4)])#**0.4
-    inter_img_body_coils = inter_img_body_coils[:,::-1,...]
+def remove_edges(data):
+    #remove edges [1/4, ... , 1/4]
+    data = abs(data[:,int(data.shape[1]//4):-int(data.shape[1]//4)])#**0.4
+    #flip the data to the right direction
+    data = data[:,::-1,...]
 
-    inter_img_surface_coils = abs(Zi_surface_coils[:,int(Zi_surface_coils.shape[1]//4):-int(Zi_surface_coils.shape[1]//4)])#**0.4
-    inter_img_surface_coils = inter_img_surface_coils[:,::-1,...]
+    return data
+    # inter_img_body_coils = abs(Zi_body_coils[:,int(Zi_body_coils.shape[1]//4):-int(Zi_body_coils.shape[1]//4)])#**0.4
+    # inter_img_body_coils = inter_img_body_coils[:,::-1,...]
 
-    return inter_img_body_coils,inter_img_surface_coils
+    # inter_img_surface_coils = abs(Zi_surface_coils[:,int(Zi_surface_coils.shape[1]//4):-int(Zi_surface_coils.shape[1]//4)])#**0.4
+    # inter_img_surface_coils = inter_img_surface_coils[:,::-1,...]
+
+    # if correction_map_from_3D is not None:
+    #     correction_map_from_3D = abs(correction_map_from_3D[:,int(correction_map_from_3D.shape[1]//4):-int(correction_map_from_3D.shape[1]//4)])
+    #     correction_map_from_3D = correction_map_from_3D[:,::-1,...]
+
+    # if correction_map_from_3D is not None:
+    #     return inter_img_body_coils,inter_img_surface_coils,correction_map_from_3D
+    # else:
+    #     return inter_img_body_coils,inter_img_surface_coils
 
 def rm_zero_row_col(data_ref,n = None,dim_info_ref = None):
     # Assume that you have a numpy array named `arr`

@@ -3,7 +3,7 @@ import numpy as np
 from helper_functions.preprocess import ifftnd, rms_comb,remove_RO_oversamling
 from helper_functions.read_data import readtwix_arry_all
 from helper_functions.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
-from helper_functions.calculating_correction_map import calculate_correction_map, normalize_images
+from helper_functions.calculating_correction_map import calculate_correction_map, normalize_image, calculate_correction_map_3D
 #from brightness_correction.recon import grappa_reconstruction
 from helper_functions.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
 from matplotlib import pyplot as plt
@@ -186,7 +186,7 @@ def low_resolution_img_interpolator(twix, image_3D_body_coils, image_3D_surface_
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
-def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom', lamb = 1e-1):
+def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom', lamb = 0.5,tol = 1e-4, maxiter=500,apply_correction_to_sensitivity_maps = False):
 
     img_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
     sensitivity_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
@@ -200,7 +200,9 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
                                                                                                                         image_3D_surface_coils, 
                                                                                                                         num_sli, img_correction_map_all,
                                                                                                                         sensitivity_correction_map_all,
-                                                                                                                        n, lamb = lamb)
+                                                                                                                        n, lamb = lamb, tol = tol, maxiter=maxiter,
+                                                                                                                        apply_correction_to_sensitivity_maps = apply_correction_to_sensitivity_maps)
+
         low_resolution_surface_coil_imgs[n,...] = x2d
         img_quats.append(img_quat)
 
@@ -412,8 +414,8 @@ def single_correction_map_generator(auto_rotation, img_quat, dim_info_org,
     inter_img_surface_coils = rms_comb(inter_img_surface_coils,0)
 
 
-    x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
-
+    x2d = normalize_image(inter_img_surface_coils)#,scanned_img)
+    x3d = normalize_image(inter_img_body_coils)
 
     *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=1e-1)
     *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=1e-1)
@@ -426,23 +428,66 @@ def single_correction_map_generator(auto_rotation, img_quat, dim_info_org,
 
 def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
-                                num_sli, correction_map_all,inversed_correction_map_all, n, lamb = 1e-1
+                                num_sli, correction_map_all,inversed_correction_map_all, n, lamb = 1e-3,tol = 1e-4, maxiter=500, 
+                                apply_correction_to_sensitivity_maps = False
                                 ):
     
-    Zi_body_coils, Zi_surface_coils, img_quat , _= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n)
-    inter_img_body_coils, inter_img_surface_coils = remove_edges(Zi_body_coils,Zi_surface_coils)
-    inter_img_body_coils = inter_img_body_coils.transpose([2,0,1])
+
+
+    image_3D_body_coils_3D = rms_comb(image_3D_body_coils.copy(),-1)
+    image_3D_surface_coils_3D = rms_comb(image_3D_surface_coils.copy(),-1)
+
+    #save image_3D_body_coils and image_3D_surface_coils as npy file
+    #np.save("image_3D_body_coils.npy",image_3D_body_coils_3D)
+    #np.save("image_3D_surface_coils.npy",image_3D_surface_coils_3D)
+    #print("image_3D_body_coils.shape",image_3D_body_coils_3D.shape)
+    #print("image_3D_surface_coils.shape",image_3D_surface_coils_3D.shape)
+    correction_map3D = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=False, debug = False)
+    correction_map3D_sense = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=True, debug = False)
+
+
+    #interpolated_data, img_quat, _  = interpolation(twix,num_sli, n, [correction_map3D, correction_map3D_sense] )
+    #correction_map_from_3D, correction_map_from_3D_sense = interpolated_data
+
+    interpolated_data, img_quat, _ = interpolation(twix,num_sli, n, [image_3D_body_coils, image_3D_surface_coils, correction_map3D, correction_map3D_sense] )
+    inter_img_body_coils, inter_img_surface_coils, correction_map_from_3D, correction_map_from_3D_sense = interpolated_data
+
+    #remove extra area for the image
+
+    correction_map_from_3D = remove_edges(correction_map_from_3D)
+    correction_map_from_3D_sense = remove_edges(correction_map_from_3D_sense)
+
+    ############old 2d method#############
+    #inter_img_body_coils = remove_edges(inter_img_body_coils)
+    inter_img_surface_coils = remove_edges(inter_img_surface_coils)
+
+    #inter_img_body_coils = inter_img_body_coils.transpose([2,0,1]) 
     inter_img_surface_coils = inter_img_surface_coils.transpose([2,0,1])
 
-    inter_img_body_coils = rms_comb(inter_img_body_coils,0)
+    #inter_img_body_coils = rms_comb(inter_img_body_coils,0)
     inter_img_surface_coils = rms_comb(inter_img_surface_coils,0)
 
+    x2d = normalize_image(inter_img_surface_coils)
+    #x3d = normalize_image(inter_img_body_coils)
+    # *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=lamb)
+    # *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=lamb)
+    ######################################
 
-    x2d, x3d = normalize_images(inter_img_surface_coils,inter_img_body_coils)#,scanned_img)
+    #print(correction_map.shape)
+    #plot correction maps
+    # plt.figure(figsize=(10,10))
+    # plt.subplot(2,2,1)
+    # plt.imshow(correction_map_from_3D)
+    # plt.title("correction_map_from_3D")
+    # plt.subplot(2,2,2)
+    # plt.imshow(correction_map)
+    # plt.title("correction_map")
 
+    #replace and output correction_map with correction_map_from_3D
+    correction_map = correction_map_from_3D
+    inversed_correction_map = correction_map_from_3D_sense
 
-    *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=lamb)
-    *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=lamb)
+    #Zi_body_coils, Zi_surface_coils, img_quat , _, correction_map_from3D= interpolation(twix, image_3D_body_coils, image_3D_surface_coils, num_sli, n, correction_map3D= correction3D)
 
     correction_map_all, inversed_correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
                                                                                         correction_map_all, inversed_correction_map_all, n, 
@@ -652,6 +697,41 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
 
                     except:
                         ...
+
+                    #import datetime    
+                    import datetime
+                    #get current time as time stamp
+                    time_stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                    #save the images
+                    #first image np.abs(correction_map_all[sli_idx,...])
+                    plt.figure()
+                    plt.imshow(np.abs(correction_map_all[sli_idx,...]),cmap='jet')
+                    plt.axis("off")
+                    plt.savefig(os.path.join("./", f"{filename}.image_correction_map_{time_stamp}.png"), bbox_inches='tight', pad_inches=0, dpi=3000)
+                    #second image np.abs(inversed_correction_map_all[sli_idx,...])
+                    plt.figure()
+                    plt.imshow(np.abs(inversed_correction_map_all[sli_idx,...]),cmap='jet')
+                    plt.axis("off")
+                    plt.savefig(os.path.join("./", f"{filename}.sensitivity_correction_map_{time_stamp}.png"), bbox_inches='tight', pad_inches=0, dpi=3000)
+                    #third image np.abs(uncorrected_results[sli_idx,...])
+                    if uncorrected_results is not None:
+                        plt.figure()
+                        plt.imshow(np.abs(img_normalize(uncorrected_results[sli_idx,...])),cmap='gray',vmax=1)
+                        plt.axis("off")
+                        plt.savefig(os.path.join("./", f"{filename}.uncorrected_results_{time_stamp}.png"), bbox_inches='tight', pad_inches=0, dpi=3000)
+                    #fourth image np.multiply(correction_map_all[sli_idx,...],uncorrected_results[sli_idx,...])
+                    if uncorrected_results is not None:
+                        plt.figure()
+                        plt.imshow(img_normalize(np.multiply(correction_map_all[sli_idx,...],uncorrected_results[sli_idx,...])),cmap='gray',vmax=1)
+                        plt.axis("off")
+                        plt.savefig(os.path.join("./", f"{filename}.corrected_results_{time_stamp}.png"), bbox_inches='tight', pad_inches=0, dpi=3000)
+                    #fifth image img_normalize(corrected_results[sli_idx,...])
+                    if corrected_results is not None:
+                        plt.figure()
+                        plt.imshow(img_normalize(corrected_results[sli_idx,...]),cmap='gray',vmax=1)
+                        plt.axis("off")
+                        plt.savefig(os.path.join("./", f"{filename}.corrected_results_(sensitivity){time_stamp}.png"), bbox_inches='tight', pad_inches=0, dpi=3000)
+                    continue
 
 
                     img_shape = correction_map_all.shape[-2:]

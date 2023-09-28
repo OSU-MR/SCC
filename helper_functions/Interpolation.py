@@ -140,37 +140,34 @@ def points_rps2xyz(scan_index = 0, twix = None,
     
     return points_xyz.reshape((-1,)+RR.shape) , rotmatrix, offset , img_quat, geo.normal
 
-
-def interpolation(twix, tmp_image_3D_body_coils, tmp_image_3D_surface_coils, num_sli, n):
+import matplotlib.pyplot as plt
+def interpolation(twix, num_sli, n, input_data):
     points_3d_xyz , rotmatrix3d, offset, _,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
-#print(points_3d_xyz.shape)
+
     points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n)
-#print(points_2d_xyz.shape)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
-#print(points_2d_xyz.shape)
     points_2d_xyz = np.mean(points_2d_xyz,2)
 
-
-    body_coils = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D_body_coils.shape[3]))
-    for coil_idx in range(tmp_image_3D_body_coils.shape[3]):
-        interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
-                                        points_3d_xyz[1, :, 0, 0],
-                                        points_3d_xyz[2, 0, 0, :]),
-                                        abs(tmp_image_3D_body_coils[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
-        zi_body_coils = interpolator(points_2d_xyz[...,[0,1,2]])
-        body_coils[:,:,coil_idx] = zi_body_coils.reshape(points_2d_xyz.shape[:2])
-
-
-    surface_coils = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D_surface_coils.shape[3]))
-    for coil_idx in range(tmp_image_3D_surface_coils.shape[3]):
-        interpolator_surface_coils = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
-                                        points_3d_xyz[1, :, 0, 0],
-                                        points_3d_xyz[2, 0, 0, :]),
-                                        abs(tmp_image_3D_surface_coils[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
-        zi_surface_coils = interpolator_surface_coils(points_2d_xyz[...,[0,1,2]])
-        surface_coils[:,:,coil_idx] = zi_surface_coils.reshape(points_2d_xyz.shape[:2])
+    output_data = []
+    for data in input_data:
+        output_data.append(cut_3D_cube(data, points_3d_xyz, points_2d_xyz))
 
     #print("body_coils",body_coils.shape)         #body_coils (150, 512, 2)
     #print("surface_coils",surface_coils.shape)   #surface_coils (150, 512, 30)
-    
-    return body_coils,surface_coils, img_quat, normal
+    return output_data, img_quat, normal
+
+def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
+    try:
+        dummy_var = tmp_image_3D.shape[3]
+    except:
+        tmp_image_3D = np.expand_dims(tmp_image_3D, axis=3)
+
+    interpolated_2D_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D.shape[3]))
+    for coil_idx in range(tmp_image_3D.shape[3]):
+        interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
+                                        points_3d_xyz[1, :, 0, 0],
+                                        points_3d_xyz[2, 0, 0, :]),
+                                        abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
+        zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
+        interpolated_2D_img[:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:2])
+    return np.squeeze(interpolated_2D_img)
