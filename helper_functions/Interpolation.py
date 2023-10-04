@@ -173,7 +173,7 @@ def interpolation(twix, num_sli, n, input_data, oversampling_phase_factor = 3):
 
     #print("body_coils",body_coils.shape)         #body_coils (150, 512, 2)
     #print("surface_coils",surface_coils.shape)   #surface_coils (150, 512, 30)
-    print("output_data.shape",output_data[0].shape)
+    #print("output_data.shape",output_data[0].shape)
     return output_data, img_quat, normal
 
 def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):

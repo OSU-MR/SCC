@@ -464,6 +464,8 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
     #print("before removing: correction_map_from_3D", correction_map_from_3D.shape)
     correction_map_from_3D = remove_edges(correction_map_from_3D)
     correction_map_from_3D_sense = remove_edges(correction_map_from_3D_sense)
+    correction_map_from_3D = np.nan_to_num(correction_map_from_3D, nan=0)
+    correction_map_from_3D_sense = np.nan_to_num(correction_map_from_3D_sense, nan=0)
     #remove over sampled area for the image
 
     #correction_map_from_3D = remove_oversampling_phase_direction(correction_map_from_3D, oversampling_phase_factor = oversampling_phase_factor)
@@ -473,7 +475,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
     #fill nan values with 0 for inter_img_surface_coils
     #inter_img_body_coils = np.nan_to_num(inter_img_body_coils)
     #inter_img_body_coils = remove_edges(inter_img_body_coils)
-    inter_img_surface_coils = np.nan_to_num(inter_img_surface_coils)
+    inter_img_surface_coils = np.nan_to_num(inter_img_surface_coils, nan=0)
     inter_img_surface_coils = remove_edges(inter_img_surface_coils)
 
     #inter_img_body_coils = inter_img_body_coils.transpose([2,0,1]) 
