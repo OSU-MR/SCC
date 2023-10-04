@@ -244,7 +244,7 @@ def fft_cropping_from64(A, target_shape = (128, 32, 32)):
     y2cut = (y - target_shape[1])//2
     z2cut = (z - target_shape[2])//2
     #
-    print(x2cut, y2cut, z2cut)
+    #print(x2cut, y2cut, z2cut)
     #crop the matrix in k-space
     A = np.fft.fftn(A, axes=(0,1,2))
     A = np.fft.fftshift(A)
@@ -405,7 +405,7 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
 
     x3_sc = c * x3_s
 
-    print(f"Time to apply correction is: {time.time() - start_time:.3f} s")
+    print(f"Time to find 3D correction map is: {time.time() - start_time:.3f} s")
     
     if debug:
         # Print time

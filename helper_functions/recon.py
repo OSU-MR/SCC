@@ -60,6 +60,100 @@ def remove_edges(data):
     #     return inter_img_body_coils,inter_img_surface_coils,correction_map_from_3D
     # else:
     #     return inter_img_body_coils,inter_img_surface_coils
+import matplotlib.pyplot as plt
+def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
+
+    if data is None:
+        return None
+    
+    #plot the data
+    try:
+        print(data.shape)
+        plt.figure()
+        plt.imshow(np.abs(data),cmap='gray')
+        plt.show()
+    except:
+        pass
+
+    data = data.reshape(oversampling_phase_factor,-1,data.shape[1])
+
+    # #plot the data
+    # try:
+    #     print(data.shape)
+    #     for i in range(data.shape[0]):
+    #         plt.figure()
+    #         plt.imshow(np.abs(data[i]),cmap='gray')
+    #         plt.show()
+    # except:
+    #     pass
+
+    # Calculate the sum of the images, ignoring nan values
+    summed_image = np.nansum(data, axis=0)
+
+    # Calculate the number of non-nan values for each pixel
+    non_nan_count = np.sum(~np.isnan(data), axis=0)
+
+    # Calculate the mean by dividing the summed_image by the number of non-nan values
+    data = np.divide(summed_image, non_nan_count, where=non_nan_count!=0)
+
+    #plot the data
+    try:
+        print(data.shape)
+        plt.figure()
+        plt.imshow(np.abs(data),cmap='gray')
+        plt.show()
+    except:
+        pass
+
+    #remove edges [1/4, ... , 1/4] in k-space
+    #first do fft to get k-space
+    # data = np.fft.fft2(data,axes=(0,1))
+    # try:
+    #     print(data.shape)
+    #     plt.figure()
+    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
+    #     plt.show()
+    # except:
+    #     pass
+    # data = np.fft.fftshift(data,axes=(0,1))
+
+    # try:
+    #     print(data.shape)
+    #     plt.figure()
+    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
+    #     plt.show()
+    # except:
+    #     pass
+    # #remove edges
+    # data = data[1::3,:]
+    # try:
+    #     print(data.shape)
+    #     plt.figure()
+    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
+    #     plt.show()
+    # except:
+    #     pass
+    # #do ifft to get image space
+    # data = np.fft.ifftshift(data,axes=(0,1))
+    # try:
+    #     print(data.shape)
+    #     plt.figure()
+    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
+    #     plt.show()
+    # except:
+    #     pass
+    # data = np.fft.ifft2(data,axes=(0,1))
+
+    # try:
+    #     print(data.shape)
+    #     plt.figure()
+    #     plt.imshow(np.abs(data),cmap='gray')
+    #     plt.show()
+    # except:
+    #     pass
+
+    return data
+
 
 def rm_zero_row_col(data_ref,n = None,dim_info_ref = None):
     # Assume that you have a numpy array named `arr`

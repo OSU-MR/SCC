@@ -37,10 +37,15 @@ def generate_3D_data(mapped_data ,pre_scan = 0):
 
 
 def rps_from_quat(data_idx = 0, img_ori = None, twix= None):
-    image_mdbs = [mdb for mdb in twix[data_idx]['mdb'] if mdb.is_image_scan()]
 
-    img_ori = image_mdbs[0].mdh.SliceData.Quaternion if img_ori is None else img_ori
-    #print(img_ori)
+    try:
+        image_mdbs = [mdb for mdb in twix[data_idx]['mdb'] if mdb.is_image_scan()]
+        img_ori = image_mdbs[0].mdh.SliceData.Quaternion if img_ori is None else img_ori
+        #print(img_ori)
+    except:
+        image_mdbs = [mdb for mdb in twix[data_idx]['mdb'] if mdb['is_image_scan']]
+        img_ori = image_mdbs[0]['Quaternion'] if img_ori is None else img_ori
+
     
     read_dir, phase_dir, slice_dir = quaternion_to_directions(img_ori)
 
@@ -80,7 +85,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
                    fov = None, resolution = None, 
                    rotmatrix = None, offset = None,
                    rotmatrix_3d = None ,offset_0 = None,
-                   voxelsize = None, num_sli = None, n = None):
+                   voxelsize = None, num_sli = None, n = None, oversampling_phase_factor = 3):
     
 
 
@@ -97,10 +102,18 @@ def points_rps2xyz(scan_index = 0, twix = None,
     ##################
     rotmatrix = np.array(geo.rotmatrix) if rotmatrix is None else np.array(rotmatrix)
     ###################
-    image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
-    img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.Quaternion
+    try:
+        image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
+        img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.Quaternion
+    except:
+        image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb['is_image_scan']]
+        img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n]['Quaternion']
+
     if scan_index != 0:
-        offset  = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.SlicePos
+        try:
+            offset  = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.SlicePos
+        except:
+            offset  = image_mdbs[(len(image_mdbs)//num_sli)*n]['SlicePos']
         offset  = [offset.Sag,offset.Cor,offset.Tra]
     #print(img_quat)
     #print(offset)
@@ -117,12 +130,15 @@ def points_rps2xyz(scan_index = 0, twix = None,
     r = 0.5*np.linspace(-1,1,resolution[reado_idx])*fov[reado_idx]+voxelsize[reado_idx]/2
     p = 0.5*np.linspace(-1,1,resolution[phase_idx])*fov[phase_idx]+voxelsize[phase_idx]/2
     s = 0.5*np.linspace(-1,1,resolution[slice_idx])*fov[slice_idx]-voxelsize[slice_idx]/2
+    
     if scan_index == 1:
         ...
         #start_point = 0
         #s = np.linspace(start_point,start_point+1,resolution[slice_idx])*fov[slice_idx]
-        s = 0.5*np.linspace(-1,1,resolution[slice_idx]*1)*fov[slice_idx]+voxelsize[slice_idx]/2
+        #s = 0.5*np.linspace(-1,1,resolution[slice_idx]*1)*fov[slice_idx]+voxelsize[slice_idx]/2
+        p = 0.5*np.linspace(-1,1,resolution[phase_idx]*oversampling_phase_factor)*fov[phase_idx]*oversampling_phase_factor+voxelsize[phase_idx]/2
     
+
     [RR,PP,SS] = np.meshgrid(r[::-1], p[::-1], s[::-1])
 
     points_rps = np.vstack([RR.ravel(), PP.ravel(), SS.ravel()])#.T
@@ -141,10 +157,10 @@ def points_rps2xyz(scan_index = 0, twix = None,
     return points_xyz.reshape((-1,)+RR.shape) , rotmatrix, offset , img_quat, geo.normal
 
 import matplotlib.pyplot as plt
-def interpolation(twix, num_sli, n, input_data):
+def interpolation(twix, num_sli, n, input_data, oversampling_phase_factor = 3):
     points_3d_xyz , rotmatrix3d, offset, _,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
 
-    points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n)
+    points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
     points_2d_xyz = np.mean(points_2d_xyz,2)
 
@@ -157,6 +173,7 @@ def interpolation(twix, num_sli, n, input_data):
 
     #print("body_coils",body_coils.shape)         #body_coils (150, 512, 2)
     #print("surface_coils",surface_coils.shape)   #surface_coils (150, 512, 30)
+    print("output_data.shape",output_data[0].shape)
     return output_data, img_quat, normal
 
 def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
@@ -170,7 +187,7 @@ def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
         interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
                                         points_3d_xyz[1, :, 0, 0],
                                         points_3d_xyz[2, 0, 0, :]),
-                                        abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
+                                        abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = np.nan) #[:,:,::-1]
         zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
         interpolated_2D_img[:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:2])
     return np.squeeze(interpolated_2D_img)

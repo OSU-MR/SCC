@@ -5,8 +5,10 @@ from helper_functions.read_data import readtwix_arry_all
 from helper_functions.Interpolation import generate_3D_data, interpolation, quaternion_to_directions
 from helper_functions.calculating_correction_map import calculate_correction_map, normalize_image, calculate_correction_map_3D
 #from brightness_correction.recon import grappa_reconstruction
-from helper_functions.recon import sense_reconstruction, remove_edges, rotate_image, pad_ref
+from helper_functions.recon import sense_reconstruction, remove_edges, remove_oversampling_phase_direction, rotate_image, pad_ref
 from matplotlib import pyplot as plt
+import gzip
+import pickle
 
 def rotate_images_for_LGE(results, quat, filename):
     if results is None:
@@ -119,35 +121,52 @@ def target_path_generator(base_dir, input_folder, output_folder, input_subfolder
         # Loop over all files in the directory
             for filename in os.listdir(full_dir_name):
             # Check if the file is a .dat file
-                if filename.endswith(".dat"):
+                if filename.endswith(".dat") or filename.endswith(".gz"):
                     data_path_names.append(os.path.join(full_dir_name, filename))
                     data_path_names_output.append(os.path.join(full_dir_name_output, filename))
     return data_path_names, data_path_names_output
 
 def rawdata_reader(data_path_filename):
-    
-    # start reading the data if these are no reference data or noise data, then the reference data or noise data will be returned as None
-    twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename=data_path_filename)
-    
-    # print("\n*******************dim_info_org**********************")
-    # dim_info_zip = zip( dim_info_org , data_org.shape )
-    # for i in dim_info_zip:
-    #     print(i,end=' ')
-    # print("\n")
-
-    #this will squeeze the dimensions
-    data = data_org.squeeze()
-    dim_info_data = dim_info_org.copy()
-
-    #end of reading the data
-    
-    # start 
-    image_3D_body_coils , image_3D_surface_coils = generate_3D_data(mapped_data)
-    
+    #if data_path_filename ends with .demo.gz, then it is a demo file
     try:
-        num_sli = data.shape[dim_info_org.index('Sli')]
+        # start reading the data if these are no reference data or noise data, then the reference data or noise data will be returned as None
+        twix, mapped_data,data_org, dim_info_org ,data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename=data_path_filename)
+        
+        # print("\n*******************dim_info_org**********************")
+        # dim_info_zip = zip( dim_info_org , data_org.shape )
+        # for i in dim_info_zip:
+        #     print(i,end=' ')
+        # print("\n")
+
+        #this will squeeze the dimensions
+        data = data_org.squeeze()
+        dim_info_data = dim_info_org.copy()
+
+        #end of reading the data
+        
+        # start 
+        image_3D_body_coils , image_3D_surface_coils = generate_3D_data(mapped_data)
+        
+        try:
+            num_sli = data.shape[dim_info_org.index('Sli')]
+        except:
+            num_sli = 1
     except:
-        num_sli = 1
+        # Load the compressed data from the .demo.gz file
+        with gzip.open(data_path_filename, 'rb') as f:
+            loaded_data = pickle.load(f)
+
+        # Extract the individual datasets from the loaded data
+        twix = loaded_data['twix']
+        image_3D_body_coils = loaded_data['image_3D_body_coils']
+        image_3D_surface_coils = loaded_data['image_3D_surface_coils']
+        data = loaded_data['data']
+        dim_info_data = loaded_data['dim_info_data']
+        data_ref = loaded_data['data_ref']
+        dim_info_ref = loaded_data['dim_info_ref']
+        num_sli = loaded_data['num_sli']
+
+    
     print('num_sli in the rawdata',num_sli)
 
     return twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli
@@ -178,16 +197,18 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
     sensitivity_correction_map_all = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2))
     low_resolution_surface_coil_imgs = np.zeros((num_sli,data.shape[dim_info_data.index('Lin')],data.shape[dim_info_data.index('Col')]//2),dtype=np.complex64)
     img_quats = []
+    correction_map3D, correction_map3D_sense = None , None
 
     for n in range(num_sli):
-        img_correction_map_all,img_quat,x2d,sensitivity_correction_map_all = calculating_correction_maps(auto_rotation,
+        img_correction_map_all,img_quat,x2d,sensitivity_correction_map_all,correction_map3D, correction_map3D_sense = calculating_correction_maps(auto_rotation,
                                                                                                                         twix, dim_info_data, 
                                                                                                                         data, image_3D_body_coils, 
                                                                                                                         image_3D_surface_coils, 
                                                                                                                         num_sli, img_correction_map_all,
                                                                                                                         sensitivity_correction_map_all,
                                                                                                                         n, lamb = lamb, tol = tol, maxiter=maxiter,
-                                                                                                                        apply_correction_to_sensitivity_maps = apply_correction_to_sensitivity_maps)
+                                                                                                                        apply_correction_to_sensitivity_maps = apply_correction_to_sensitivity_maps,
+                                                                                                                        correction_map3D = correction_map3D, correction_map3D_sense = correction_map3D_sense)
 
         low_resolution_surface_coil_imgs[n,...] = x2d
         img_quats.append(img_quat)
@@ -418,32 +439,41 @@ def single_correction_map_generator(auto_rotation, img_quat, dim_info_org,
 def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
                                 num_sli, correction_map_all,inversed_correction_map_all, n, lamb = 1e-3,tol = 1e-4, maxiter=500, 
-                                apply_correction_to_sensitivity_maps = False
+                                apply_correction_to_sensitivity_maps = False, correction_map3D = None , correction_map3D_sense = None,oversampling_phase_factor = 1
                                 ):
     
 
+    if correction_map3D is None and correction_map3D_sense is None:
+        image_3D_body_coils_3D = rms_comb(image_3D_body_coils.copy(),-1)
+        image_3D_surface_coils_3D = rms_comb(image_3D_surface_coils.copy(),-1)
 
-    image_3D_body_coils_3D = rms_comb(image_3D_body_coils.copy(),-1)
-    image_3D_surface_coils_3D = rms_comb(image_3D_surface_coils.copy(),-1)
-
-    if apply_correction_to_sensitivity_maps == False:
-        correction_map3D = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=False, debug = False)
-        correction_map3D_sense = None
+        if apply_correction_to_sensitivity_maps == False:
+            correction_map3D = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=False, debug = False)
+            correction_map3D_sense = None
+        else:
+            correction_map3D = None
+            correction_map3D_sense = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=True, debug = False)
     else:
-        correction_map3D = None
-        correction_map3D_sense = calculate_correction_map_3D(image_3D_surface_coils_3D,image_3D_body_coils_3D,lamb=lamb,tol=tol, maxiter=maxiter, sensitivity_correction_maps=True, debug = False)
+        ...
 
 
-    interpolated_data, img_quat, _ = interpolation(twix,num_sli, n, [image_3D_body_coils, image_3D_surface_coils, correction_map3D, correction_map3D_sense] )
+    interpolated_data, img_quat, _ = interpolation(twix,num_sli, n, [image_3D_body_coils, image_3D_surface_coils, correction_map3D, correction_map3D_sense] , oversampling_phase_factor = oversampling_phase_factor)
     inter_img_body_coils, inter_img_surface_coils, correction_map_from_3D, correction_map_from_3D_sense = interpolated_data
 
     #remove extra area for the image
-
+    #print("before removing: correction_map_from_3D", correction_map_from_3D.shape)
     correction_map_from_3D = remove_edges(correction_map_from_3D)
     correction_map_from_3D_sense = remove_edges(correction_map_from_3D_sense)
+    #remove over sampled area for the image
+
+    #correction_map_from_3D = remove_oversampling_phase_direction(correction_map_from_3D, oversampling_phase_factor = oversampling_phase_factor)
+    #correction_map_from_3D_sense = remove_oversampling_phase_direction(correction_map_from_3D_sense, oversampling_phase_factor = oversampling_phase_factor)
 
     ############old 2d method#############
+    #fill nan values with 0 for inter_img_surface_coils
+    #inter_img_body_coils = np.nan_to_num(inter_img_body_coils)
     #inter_img_body_coils = remove_edges(inter_img_body_coils)
+    inter_img_surface_coils = np.nan_to_num(inter_img_surface_coils)
     inter_img_surface_coils = remove_edges(inter_img_surface_coils)
 
     #inter_img_body_coils = inter_img_body_coils.transpose([2,0,1]) 
@@ -453,6 +483,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
     inter_img_surface_coils = rms_comb(inter_img_surface_coils,0)
 
     x2d = normalize_image(inter_img_surface_coils)
+    #x2d = remove_oversampling_phase_direction(x2d, oversampling_phase_factor = oversampling_phase_factor)
     #x3d = normalize_image(inter_img_body_coils)
     # *_ ,correction_map = calculate_correction_map(A=x2d,B=x3d,lamb=lamb)
     # *_ ,inversed_correction_map = calculate_correction_map(A=x3d,B=x2d,lamb=lamb)
@@ -475,7 +506,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
 
 
                                                                         
-    return correction_map_all,img_quat,x2d,inversed_correction_map_all
+    return correction_map_all,img_quat,x2d,inversed_correction_map_all, correction_map3D, correction_map3D_sense
 
 # def calculating_correction_maps(auto_rotation, CustomProcedure, twix, dim_info_org, 
 #                                 data, image_3D_body_coils, image_3D_surface_coils, 
@@ -521,6 +552,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
 
 def correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, correction_map_all
                             , n, img_quat, correction_map):
+    correction_map = np.abs(correction_map)
     if auto_rotation == 'Dicom':
         correction_map = np.rot90(correction_map,-1)
 
