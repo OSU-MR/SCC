@@ -27,7 +27,7 @@ Go to the path of the SCC folder and run the following command: `pip install -e`
 <p align="center">
   <img src="2ch-results.png" alt="representative results"/>
   <br/>
-  <i>Fig 1: Your Caption Here</i>
+  <i>Fig 1: From left to right, correction map for the image, correction map for the sensitivity maps, magnitude of the uncorrected image, magnitude of the image corrected with the first correction map, the magnitude of the image where the sensitivity maps are corrected with the second correction map. A representative two-chamber view of the heart is shown.</i>
 </p>
    
 
