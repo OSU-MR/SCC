@@ -16,12 +16,13 @@
 2. Clone the GitHub repository to your local workstation
 
 3. Open `brightness_correction_demo.ipynb` in Anaconda, VS Code, etc.
-   * Make the SCC environment is selected
+   * Make sure the SCC environment is selected
    * Execute all cells in `brightness_correction_demo.ipynb`
-
-
+   
 
 # For installing the package content (optional)
-Go to the path of the SCC folder and run the following command: `pip install -e` .
+Go to the path of the SCC folder and run the following command: `pip install -e`.
+
+   ![Representative results](2ch_results.png)
    
 
