@@ -2,7 +2,7 @@
 
 
 
-# Surface Coil Intensity Correction (SCC)
+## Surface Coil Intensity Correction (SCC)
 --beta version--
 
 
@@ -20,9 +20,14 @@
    * Execute all cells in `brightness_correction_demo.ipynb`
    
 
-# For installing the package content (optional)
+## For installing the package content (optional)
 Go to the path of the SCC folder and run the following command: `pip install -e`.
 
-   ![Representative results](2ch-results.png)
+## Representative results
+<p align="center">
+  <img src="2ch-results.png" alt="representative results"/>
+  <br/>
+  <i>Fig 1: Your Caption Here</i>
+</p>
    
 
