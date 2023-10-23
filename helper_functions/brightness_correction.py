@@ -258,16 +258,16 @@ def save_sense_recon_results(full_dir_name_output,sense_recon_results, img_corre
     inversed_correction_map_all_filename = full_dir_name_output + ".sensitivity_correction_map.npy"
     quat_filename = full_dir_name_output + ".quat.npy"
     # Save reconstruction_results and correction_map_all to their respective files
-    os.makedirs(full_dir_name_output, exist_ok=True)
+    os.makedirs(os.path.dirname(full_dir_name_output), exist_ok=True)
 
     if apply_correction_during_sense_recon:
         np.save(corrected_results_filename, sense_recon_results)
     else:
         np.save(uncorrected_results_filename, sense_recon_results)
 
-    if img_correction_map is not None:
+    if np.sum(img_correction_map) != 0:
         np.save(correction_map_all_filename, img_correction_map)
-    if sens_correction_map is not None:
+    if np.sum(sens_correction_map) != 0:
         np.save(inversed_correction_map_all_filename, sens_correction_map)
     
     #save quat and slc_dir for future debugging
