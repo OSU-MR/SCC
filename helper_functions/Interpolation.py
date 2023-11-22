@@ -157,17 +157,23 @@ def points_rps2xyz(scan_index = 0, twix = None,
     return points_xyz.reshape((-1,)+RR.shape) , rotmatrix, offset , img_quat, geo.normal
 
 import matplotlib.pyplot as plt
-def interpolation(twix, dim_info_org, num_sli, n, input_data, oversampling_phase_factor = 3):
+def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversampling_phase_factor = 3):
     points_3d_xyz , rotmatrix3d, offset, _,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
 
     points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
     #when dim_info_org.index('Par') has a value and the value is bigger than 1 we don't need points_2d_xyz = np.mean(points_2d_xyz,2), the 'Par' doesn't always exist in the dim_info_org
+    print(dim_info_org)
+    print("points_2d_xyz",points_2d_xyz.shape)
+    print("data_org",data_org.shape)
+    
     try:
-        if points_2d_xyz.shape[dim_info_org.index('Par')] < 1:
+        print("data_org.shape[dim_info_org.index('Par')]",data_org.shape[dim_info_org.index('Par')])
+        if data_org.shape[dim_info_org.index('Par')] <= 1:
             points_2d_xyz = np.mean(points_2d_xyz,2)
     except:
         points_2d_xyz = np.mean(points_2d_xyz,2)
+    print("points_2d_xyz",points_2d_xyz.shape)
 
     output_data = []
     for data in input_data:
@@ -176,10 +182,8 @@ def interpolation(twix, dim_info_org, num_sli, n, input_data, oversampling_phase
         else:
             output_data.append(None)
 
-    #print("body_coils",body_coils.shape)         #body_coils (150, 512, 2)
-    #print("surface_coils",surface_coils.shape)   #surface_coils (150, 512, 30)
-    #print("output_data.shape",output_data[0].shape)
     return output_data, img_quat, normal
+
 
 def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
     try:
@@ -187,15 +191,25 @@ def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
     except:
         tmp_image_3D = np.expand_dims(tmp_image_3D, axis=3)
 
-    interpolated_2D_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D.shape[3]))
+    if len(points_2d_xyz.shape) == 3:
+        interpolated_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D.shape[3]))
+    elif len(points_2d_xyz.shape) == 4:
+        interpolated_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],points_2d_xyz.shape[2],tmp_image_3D.shape[3]))
+    else:
+        raise ValueError("unknown data shape")
+
+    #print("points_2d_xyz.shape",points_2d_xyz.shape) #(96, 192, 72, 3)
+    #for par ==1, points_2d_xyz (150, 512, 3)
+
     for coil_idx in range(tmp_image_3D.shape[3]):
         interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
                                         points_3d_xyz[1, :, 0, 0],
                                         points_3d_xyz[2, 0, 0, :]),
-                                        abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0)#np.nan) #[:,:,::-1]
+                                        abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
         zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
-        interpolated_2D_img[:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:2])
-    return np.squeeze(interpolated_2D_img)
+        #np.save("correction_map.npy",zi_image)
+        interpolated_img[...,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:-1])
+    return np.squeeze(interpolated_img)
 
 
 # def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
@@ -204,15 +218,12 @@ def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
 #     except:
 #         tmp_image_3D = np.expand_dims(tmp_image_3D, axis=3)
 
-#     interpolated_2D_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],points_2d_xyz.shape[2],tmp_image_3D.shape[3]))
-#     #print("points_2d_xyz.shape",points_2d_xyz.shape) #(96, 192, 72, 3)
-
+#     interpolated_2D_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D.shape[3]))
 #     for coil_idx in range(tmp_image_3D.shape[3]):
 #         interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
 #                                         points_3d_xyz[1, :, 0, 0],
 #                                         points_3d_xyz[2, 0, 0, :]),
-#                                         abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = np.nan) #[:,:,::-1]
+#                                         abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0)#np.nan) #[:,:,::-1]
 #         zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
-#         np.save("correction_map.npy",zi_image)
-#         interpolated_2D_img[:,:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:-1])
+#         interpolated_2D_img[:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:2])
 #     return np.squeeze(interpolated_2D_img)

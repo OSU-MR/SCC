@@ -74,10 +74,11 @@ def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
     
     #plot the data
     try:
-        print(data.shape)
-        plt.figure()
-        plt.imshow(np.abs(data),cmap='gray')
-        plt.show()
+        ...
+        # print(data.shape)
+        # plt.figure()
+        # plt.imshow(np.abs(data),cmap='gray')
+        # plt.show()
     except:
         pass
 
@@ -104,10 +105,11 @@ def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
 
     #plot the data
     try:
-        print(data.shape)
-        plt.figure()
-        plt.imshow(np.abs(data),cmap='gray')
-        plt.show()
+        ...
+        #print(data.shape)
+        #plt.figure()
+        #plt.imshow(np.abs(data),cmap='gray')
+        #plt.show()
     except:
         pass
 

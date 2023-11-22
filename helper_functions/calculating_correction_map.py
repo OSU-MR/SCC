@@ -344,18 +344,18 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
         x3_s = x3_s_in/np.max(x3_s_in)
         x3_b = x3_b_in/np.max(x3_s_in)
         
-    plt.figure(figsize=(5, 10))
-    plt.subplot(2, 2, 1)
-    plt.imshow(np.abs(np.squeeze(x3_s[:, 32, :]))**1, cmap='gray')
-    plt.axis('off')
-    plt.colorbar()
-    plt.title('surface coil')
+    # plt.figure(figsize=(5, 10))
+    # plt.subplot(2, 2, 1)
+    # plt.imshow(np.abs(np.squeeze(x3_s[:, 32, :]))**1, cmap='gray')
+    # plt.axis('off')
+    # plt.colorbar()
+    # plt.title('surface coil')
 
-    plt.subplot(2, 2, 2)
-    plt.imshow(np.abs(np.squeeze(x3_b[:, 32, :]))**1, cmap='gray')
-    plt.axis('off')
-    plt.colorbar()
-    plt.title('body coil')
+    # plt.subplot(2, 2, 2)
+    # plt.imshow(np.abs(np.squeeze(x3_b[:, 32, :]))**1, cmap='gray')
+    # plt.axis('off')
+    # plt.colorbar()
+    # plt.title('body coil')
 
     
 
