@@ -16,12 +16,18 @@ from helper_functions.Interpolation import quaternion_to_directions
 #     return grappa_img
 
 def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0.0):
+    #print the type of ref_padded
+    print("type(ref_padded)",type(ref_padded))
     mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
+    print("mps.shape",mps.shape)
     if inversed_correction_map is not None:
-        mps = np.multiply(mps,inversed_correction_map[::-1,:])
+        try:
+            mps = np.multiply(mps,inversed_correction_map[:,:])
+        except:
+            mps = np.multiply(mps,inversed_correction_map[:,:].transpose([1,0]))
     sense_img = mr.app.SenseRecon(ksp, mps).run()
     sense_img = complex_image_normalization(sense_img)
-    sense_img = sense_img[::-1,:]
+    sense_img = sense_img[:,:]
 
     return sense_img
 
@@ -87,7 +93,7 @@ def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
     # except:
     #     pass
 
-    # Calculate the sum of the images, ignoring nan values
+    # # Calculate the sum of the images, ignoring nan values
     summed_image = np.nansum(data, axis=0)
 
     # Calculate the number of non-nan values for each pixel

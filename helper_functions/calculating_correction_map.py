@@ -322,8 +322,8 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
     #np.save('x3_s_in.npy', x3_s_in)
     #np.save('x3_b_in.npy', x3_b_in)
 
-    x3_s_in = extendTo128x64x64(x3_s_in)
-    x3_b_in = extendTo128x64x64(x3_b_in)
+    x3_s_in = np.abs(extendTo128x64x64(x3_s_in))
+    x3_b_in = np.abs(extendTo128x64x64(x3_b_in))
     #x3_s_in = extendTo128x128x128(x3_s_in)
     #x3_b_in = extendTo128x128x128(x3_b_in)
 
@@ -343,13 +343,26 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
     else:
         x3_s = x3_s_in/np.max(x3_s_in)
         x3_b = x3_b_in/np.max(x3_s_in)
-        pass
+        
+    plt.figure(figsize=(5, 10))
+    plt.subplot(2, 2, 1)
+    plt.imshow(np.abs(np.squeeze(x3_s[:, 32, :]))**1, cmap='gray')
+    plt.axis('off')
+    plt.colorbar()
+    plt.title('surface coil')
+
+    plt.subplot(2, 2, 2)
+    plt.imshow(np.abs(np.squeeze(x3_b[:, 32, :]))**1, cmap='gray')
+    plt.axis('off')
+    plt.colorbar()
+    plt.title('body coil')
 
     
 
     if debug:
         print("*****************start********************")
         print(np.max(x3_s_in), np.max(x3_b_in))
+        print(np.max(x3_s), np.max(x3_b))
         print("******************end*******************")
         print("Shape of x3_s:", x3_s.shape)
         print("Shape of x3_b:", x3_b.shape)
@@ -426,7 +439,7 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
         plt.imshow(np.squeeze(c[:, ny//2, :]), cmap='jet')
         plt.axis('off')
         plt.title('correction map')
-        #plt.colorbar()
+        plt.colorbar(shrink=0.7)
 
         plt.subplot(2, 2, 4)
         plt.imshow(np.squeeze(x3_sc[:, ny//2, :]), cmap='gray')
