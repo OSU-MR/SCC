@@ -17,9 +17,9 @@ from helper_functions.Interpolation import quaternion_to_directions
 
 def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0.0):
     #print the type of ref_padded
-    print("type(ref_padded)",type(ref_padded))
+    #print("type(ref_padded)",type(ref_padded))
     mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
-    print("mps.shape",mps.shape)
+    #print("mps.shape",mps.shape)
     if inversed_correction_map is not None:
         try:
             mps = np.multiply(mps,inversed_correction_map[:,:])

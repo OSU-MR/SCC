@@ -214,33 +214,37 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
     correction_map3D, correction_map3D_sense = None , None
 
     for n in range(num_sli):
-        img_correction_map_all,img_quat,x2d,sensitivity_correction_map_all,correction_map3D, correction_map3D_sense = calculating_correction_maps(auto_rotation,
+        img_correction_map_all,img_quat,low_resolution_surface_coil_imgs,sensitivity_correction_map_all,correction_map3D, correction_map3D_sense = calculating_correction_maps(auto_rotation,
                                                                                                                         twix, dim_info_data, 
                                                                                                                         data, image_3D_body_coils, 
                                                                                                                         image_3D_surface_coils, 
                                                                                                                         num_sli, img_correction_map_all,
                                                                                                                         sensitivity_correction_map_all,
+                                                                                                                        low_resolution_surface_coil_imgs,
                                                                                                                         n, lamb = lamb, tol = tol, maxiter=maxiter,
                                                                                                                         apply_correction_to_sensitivity_maps = apply_correction_to_sensitivity_maps,
                                                                                                                         correction_map3D = correction_map3D, correction_map3D_sense = correction_map3D_sense,
                                                                                                                         oversampling_phase_factor = oversampling_phase_factor)
 
-        low_resolution_surface_coil_imgs[n,...] = x2d
+        #low_resolution_surface_coil_imgs[n,...] = x2d
         img_quats.append(img_quat)
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
 def auto_image_rotation(sense_recon_results, img_quats, auto_rotation = 'Dicom', img_correction_map = None, sens_correction_map = None,filename = None):
-    num_sli = sense_recon_results.shape[0]
 
-    sense_recon_results_rotated = np.zeros((sense_recon_results.shape),dtype=np.complex64)
+    if auto_rotation not in ['Dicom','LGE']:
+        raise ValueError("auto_rotation should be either 'Dicom' or 'LGE'")
+    
     if auto_rotation == 'Dicom':
+        #num_sli = sense_recon_results.shape[0]
         #for n in range(num_sli):
         #    sense_recon_results_rotated = sense_img_rotation(sense_recon_results_rotated, sense_recon_results[n,...], img_quats[n], num_sli, n, auto_rotation = auto_rotation)
         #return sense_recon_results_rotated, img_correction_map, sens_correction_map
         return sense_recon_results, img_correction_map, sens_correction_map
     
     if auto_rotation == 'LGE':
+        sense_recon_results_rotated = np.zeros((sense_recon_results.shape),dtype=np.complex64)
         sense_recon_results_rotated = rotate_images_for_LGE(sense_recon_results, img_quats[0], filename)
         img_correction_map = rotate_images_for_LGE(img_correction_map, img_quats[0], filename)
         sens_correction_map = rotate_images_for_LGE(sens_correction_map, img_quats[0], filename)
@@ -599,7 +603,7 @@ def apply_correction_mask(image_3D_body_coils_3D, image_3D_surface_coils_3D, cor
 
 def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
                                 data, image_3D_body_coils, image_3D_surface_coils, 
-                                num_sli, correction_map_all,inversed_correction_map_all, n, lamb = 1e-3,tol = 1e-4, maxiter=500, 
+                                num_sli, correction_map_all,inversed_correction_map_all, low_resolution_surface_coil_imgs,n, lamb = 1e-3,tol = 1e-4, maxiter=500, 
                                 apply_correction_to_sensitivity_maps = False, correction_map3D = None , correction_map3D_sense = None,oversampling_phase_factor = 1
                                 ):
 
@@ -632,28 +636,28 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
 
 
 
-    print("dim_info_org",dim_info_org)
-    try:
-        print("inter_img_surface_coils.shape",inter_img_surface_coils.shape)
-    except:
-        ...
-    try:
-        print("inter_img_body_coils.shape",inter_img_body_coils.shape)
-    except:
-        ...
-    try:
-        print("correction_map_from_3D.shape",correction_map_from_3D.shape)
-    except:
-        ...
-    try:
-        print("correction_map_from_3D_sense.shape",correction_map_from_3D_sense.shape)
-    except:
-        ...
+    # print("dim_info_org",dim_info_org)
+    # try:
+    #     print("inter_img_surface_coils.shape",inter_img_surface_coils.shape)
+    # except:
+    #     ...
+    # try:
+    #     print("inter_img_body_coils.shape",inter_img_body_coils.shape)
+    # except:
+    #     ...
+    # try:
+    #     print("correction_map_from_3D.shape",correction_map_from_3D.shape)
+    # except:
+    #     ...
+    # try:
+    #     print("correction_map_from_3D_sense.shape",correction_map_from_3D_sense.shape)
+    # except:
+    #     ...
 
-    try:
-        print("correction_map_all.shape",correction_map_all.shape)
-    except:
-        ...
+    # try:
+    #     print("correction_map_all.shape",correction_map_all.shape)
+    # except:
+    #     ...
 
 
     #for 4d:
@@ -675,33 +679,33 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
             x2d = np.zeros((data.shape[dim_info_org.index('Lin')],data.shape[dim_info_org.index('Col')]//2,par_num))
             for par_idx in range(par_num):
                 if apply_correction_to_sensitivity_maps == False:
-                    correction_map_all[...,par_idx], inversed_correction_map_all[...,par_idx], x2d[...,par_idx] = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
+                    correction_map_all[...,par_idx], inversed_correction_map_all[...,par_idx], low_resolution_surface_coil_imgs[...,par_idx] = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
                                                                                     apply_correction_to_sensitivity_maps, oversampling_phase_factor, img_quat, 
                                                                                     inter_img_body_coils[...,par_idx], inter_img_surface_coils[...,par_idx], correction_map_from_3D[...,par_idx], None,
-                                                                                    correction_map_all[...,par_idx], None)
+                                                                                    correction_map_all[...,par_idx], None,low_resolution_surface_coil_imgs[...,par_idx])
                 else:
-                    correction_map_all[...,par_idx], inversed_correction_map_all[...,par_idx], x2d[...,par_idx] = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
+                    correction_map_all[...,par_idx], inversed_correction_map_all[...,par_idx], low_resolution_surface_coil_imgs[...,par_idx] = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
                                                                                     apply_correction_to_sensitivity_maps, oversampling_phase_factor, img_quat, 
                                                                                     inter_img_body_coils[...,par_idx], inter_img_surface_coils[...,par_idx], None, correction_map_from_3D_sense[...,par_idx],
-                                                                                    None, inversed_correction_map_all[...,par_idx])
+                                                                                    None, inversed_correction_map_all[...,par_idx],low_resolution_surface_coil_imgs[...,par_idx])
         else:
-            correction_map_all, inversed_correction_map_all, x2d = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
+            correction_map_all, inversed_correction_map_all, low_resolution_surface_coil_imgs = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
                                                                                    apply_correction_to_sensitivity_maps, oversampling_phase_factor, img_quat, 
                                                                                    inter_img_body_coils, inter_img_surface_coils, correction_map_from_3D, correction_map_from_3D_sense,
-                                                                                   correction_map_all, inversed_correction_map_all)
+                                                                                   correction_map_all, inversed_correction_map_all,low_resolution_surface_coil_imgs)
     except:
-        correction_map_all, inversed_correction_map_all, x2d = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
+        correction_map_all, inversed_correction_map_all, low_resolution_surface_coil_imgs = post_processing(auto_rotation, dim_info_org, data, num_sli, n, 
                                                                                apply_correction_to_sensitivity_maps, oversampling_phase_factor, img_quat, 
                                                                                inter_img_body_coils, inter_img_surface_coils, correction_map_from_3D, correction_map_from_3D_sense,
-                                                                               correction_map_all, inversed_correction_map_all)
+                                                                               correction_map_all, inversed_correction_map_all,low_resolution_surface_coil_imgs)
 
     
                                                                         
-    return correction_map_all,img_quat,x2d,inversed_correction_map_all, correction_map3D, correction_map3D_sense
+    return correction_map_all,img_quat,low_resolution_surface_coil_imgs,inversed_correction_map_all, correction_map3D, correction_map3D_sense
 
 def post_processing(auto_rotation, dim_info_org, data, num_sli, n, apply_correction_to_sensitivity_maps, 
                     oversampling_phase_factor, img_quat, inter_img_body_coils, inter_img_surface_coils, 
-                    correction_map_from_3D, correction_map_from_3D_sense,correction_map_all, inversed_correction_map_all):
+                    correction_map_from_3D, correction_map_from_3D_sense,correction_map_all, inversed_correction_map_all,low_resolution_surface_coil_imgs):
     
     if oversampling_phase_factor != 1:
         if apply_correction_to_sensitivity_maps == False:
@@ -750,6 +754,15 @@ def post_processing(auto_rotation, dim_info_org, data, num_sli, n, apply_correct
     correction_map = correction_map_from_3D
     inversed_correction_map = correction_map_from_3D_sense
 
+    # print("x2d.shape"   ,x2d.shape)
+    # print("correction_map_all.shape", correction_map_all.shape)
+    # print("correction_map.shape", correction_map.shape)
+
+    #4d
+    # x2d.shape (96, 96)
+    # correction_map_all.shape (1, 96, 96)
+    # correction_map.shape (96, 96)
+
 
     if apply_correction_to_sensitivity_maps == False:
         correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
@@ -759,8 +772,13 @@ def post_processing(auto_rotation, dim_info_org, data, num_sli, n, apply_correct
         correction_map_all = None
         inversed_correction_map_all = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
                                                     inversed_correction_map_all, n, img_quat, inversed_correction_map)
+        
+
+    low_resolution_surface_coil_imgs = correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, 
+                                                low_resolution_surface_coil_imgs, n, img_quat, x2d)        
+    
                                                     
-    return correction_map_all,inversed_correction_map_all,x2d
+    return correction_map_all,inversed_correction_map_all,low_resolution_surface_coil_imgs
 
 # def calculating_correction_maps(auto_rotation, twix, dim_info_org, 
 #                                 data, image_3D_body_coils, image_3D_surface_coils, 
@@ -915,6 +933,12 @@ def post_processing(auto_rotation, dim_info_org, data, num_sli, n, apply_correct
 
 def correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, correction_map_all
                             , n, img_quat, correction_map):
+    
+    #throw an error if auto_rotation is nither 'Dicom' nor 'LGE'
+    if auto_rotation not in ['Dicom','LGE']:
+        raise ValueError("auto_rotation should be either 'Dicom' or 'LGE'")
+
+
     correction_map = np.abs(correction_map)
     if auto_rotation == 'Dicom':
         correction_map = np.rot90(correction_map,-1)
@@ -934,8 +958,12 @@ def correction_map_rotation(auto_rotation, dim_info_org, data, num_sli, correcti
     return correction_map_all
 
 def sense_input_rotation(auto_rotation, img_quat, sense_data):
+
+    if auto_rotation not in ['Dicom','LGE']:
+        raise ValueError("auto_rotation should be either 'Dicom' or 'LGE'")
+
     if auto_rotation != 'Dicom':
-        return sense_data
+        return sense_data[...,::-1,:]
     
     else:
         sense_data = np.rot90(sense_data,-1,[-2,-1])
@@ -1111,30 +1139,46 @@ def displaying_results(base_dir ,input_folder, output_folder, folder_names = Non
                     try:
                         correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.image_correction_map.npy")
                         correction_map_all = np.load(correction_map_all_filename, allow_pickle=True)
-                        if len(correction_map_all.shape) == 4 and par_idx is not None:
-                            correction_map_all = correction_map_all[...,par_idx]
+                        if len(correction_map_all.shape) == 4:
+                            if par_idx is not None:
+                                correction_map_all = correction_map_all[...,par_idx]
+                            else:
+                                #throw an error if par_idx is None and len(correction_map_all.shape) == 4
+                                raise ValueError("par_idx should not be None if Par dimension exists")
                     except:
                         ...
                     try:
                         inversed_correction_map_all_filename = os.path.join(full_dir_name_output, f"{filename}.sensitivity_correction_map.npy")
                         inversed_correction_map_all = np.load(inversed_correction_map_all_filename)
-                        if len(inversed_correction_map_all.shape) == 4 and par_idx is not None:
-                            inversed_correction_map_all = inversed_correction_map_all[...,par_idx]
+                        if len(inversed_correction_map_all.shape) == 4:
+                            if par_idx is not None:
+                                inversed_correction_map_all = inversed_correction_map_all[...,par_idx]
+                            else:
+                                #throw an error if par_idx is None and len(inversed_correction_map_all.shape) == 4
+                                raise ValueError("par_idx should not be None if Par dimension exists")
                     except:
                         ...
 
                     try:
                         corrected_results_filename = os.path.join(full_dir_name_output, f"{filename}.corrected_sense_results.npy")
                         corrected_results = np.load(corrected_results_filename, allow_pickle=True)
-                        if len(corrected_results.shape) == 4 and par_idx is not None:
-                            corrected_results = corrected_results[...,par_idx]
+                        if len(corrected_results.shape) == 4:
+                            if par_idx is not None:
+                                corrected_results = corrected_results[...,par_idx]
+                            else:
+                                #throw an error if par_idx is None and len(corrected_results.shape) == 4
+                                raise ValueError("par_idx should not be None if Par dimension exists")
                     except:
                         corrected_results = None
                     try:
                         uncorrected_results_filename = os.path.join(full_dir_name_output, f"{filename}.uncorrected_results.npy")
                         uncorrected_results = np.load(uncorrected_results_filename, allow_pickle=True)
-                        if len(uncorrected_results.shape) == 4 and par_idx is not None:
-                            uncorrected_results = uncorrected_results[...,par_idx]
+                        if len(uncorrected_results.shape) == 4:
+                            if par_idx is not None:
+                                uncorrected_results = uncorrected_results[...,par_idx]
+                            else:
+                                #throw an error if par_idx is None and len(uncorrected_results.shape) == 4
+                                raise ValueError("par_idx should not be None if Par dimension exists")
                     except:
                         uncorrected_results = None
 

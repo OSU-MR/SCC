@@ -163,17 +163,17 @@ def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversamp
     points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
     #when dim_info_org.index('Par') has a value and the value is bigger than 1 we don't need points_2d_xyz = np.mean(points_2d_xyz,2), the 'Par' doesn't always exist in the dim_info_org
-    print(dim_info_org)
-    print("points_2d_xyz",points_2d_xyz.shape)
-    print("data_org",data_org.shape)
+    # print(dim_info_org)
+    # print("points_2d_xyz",points_2d_xyz.shape)
+    # print("data_org",data_org.shape)
     
     try:
-        print("data_org.shape[dim_info_org.index('Par')]",data_org.shape[dim_info_org.index('Par')])
+        #print("data_org.shape[dim_info_org.index('Par')]",data_org.shape[dim_info_org.index('Par')])
         if data_org.shape[dim_info_org.index('Par')] <= 1:
             points_2d_xyz = np.mean(points_2d_xyz,2)
     except:
         points_2d_xyz = np.mean(points_2d_xyz,2)
-    print("points_2d_xyz",points_2d_xyz.shape)
+    #print("points_2d_xyz",points_2d_xyz.shape)
 
     output_data = []
     for data in input_data:
