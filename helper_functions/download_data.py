@@ -30,15 +30,30 @@ def download_file_from_figshare(saving_path, url):
 
 import subprocess
 
+def get_cuda_version():
+    try:
+        nvcc_output = subprocess.check_output("nvcc --version", shell=True).decode()
+        cuda_version = re.search(r"release (\d+\.\d+)", nvcc_output).group(1)
+        return cuda_version
+    except Exception as e:
+        print(f"Error getting CUDA version: {e}")
+        return None
+    
 def install_missing_packages():
-    # List of missing packages to be installed
     packages = [
         "numpy==1.23.4",
         "sigpy==0.1.25",
         "matplotlib==3.7.2",
     ]
 
-    # Install each package
+    cuda_version = get_cuda_version()
+
+    # Add CuPy package based on CUDA version
+    if cuda_version:
+        packages.append(f"cupy-cuda{cuda_version.replace('.', '')}")
+    else:
+        print("CUDA version not found. Skipping CuPy installation.")
+
     for package in packages:
         print(f"Installing {package}...")
         subprocess.run(["pip", "install", package])

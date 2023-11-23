@@ -1,5 +1,7 @@
 #import pygrappa
+import cupy
 import numpy as np
+import sigpy as sp
 import sigpy.mri as mr
 from helper_functions.preprocess import ifftnd, rms_comb
 from helper_functions.Interpolation import quaternion_to_directions
@@ -15,21 +17,52 @@ from helper_functions.Interpolation import quaternion_to_directions
 
 #     return grappa_img
 
-def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0.0):
-    #print the type of ref_padded
-    #print("type(ref_padded)",type(ref_padded))
-    mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
-    #print("mps.shape",mps.shape)
-    if inversed_correction_map is not None:
-        try:
-            mps = np.multiply(mps,inversed_correction_map[:,:])
-        except:
-            mps = np.multiply(mps,inversed_correction_map[:,:].transpose([1,0]))
-    sense_img = mr.app.SenseRecon(ksp, mps).run()
-    sense_img = complex_image_normalization(sense_img)
-    sense_img = sense_img[:,:]
+# def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0.0):
+#     #print the type of ref_padded
+#     #print("type(ref_padded)",type(ref_padded))
+#     mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
+#     #print("mps.shape",mps.shape)
+#     if inversed_correction_map is not None:
+#         try:
+#             mps = np.multiply(mps,inversed_correction_map)
+#         except:
+#             mps = np.multiply(mps,inversed_correction_map.transpose([1,0]))
+#     sense_img = mr.app.SenseRecon(ksp, mps).run()
+#     sense_img = complex_image_normalization(sense_img)
+#     sense_img = sense_img
+
+#     return sense_img
+
+
+def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0, device=0):
+    #check the available GPU
+    try:
+        with sp.Device(device):
+            print("Using GPU")
+            # Convert arrays to SigPy arrays, so they are on the proper device
+            ksp = sp.to_device(ksp)
+            ref_padded = sp.to_device(ref_padded)
+    
+            mps = mr.app.EspiritCalib(ref_padded, thresh=thresh, crop=crop,device=sp.Device(device)).run()
+            
+            if inversed_correction_map is not None:
+                inversed_correction_map = cupy.asarray(inversed_correction_map)
+                mps *= inversed_correction_map
+
+            
+            sense_img = mr.app.SenseRecon(ksp, mps,device = sp.Device(device)).run()
+            sense_img = complex_image_normalization(sense_img.get())
+            sense_img = sense_img
+    except Exception as e:
+        print("Tried using GPU but encountered this error: ", e)
+        mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
+        if inversed_correction_map is not None:
+            mps = np.multiply(mps,inversed_correction_map)
+        sense_img = complex_image_normalization(sense_img)
+        sense_img = sense_img
 
     return sense_img
+
 
 def complex_image_normalization(img):
     #extract phase and magnitude
