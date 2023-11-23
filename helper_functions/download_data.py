@@ -38,7 +38,19 @@ def get_cuda_version():
     except Exception as e:
         print(f"Error getting CUDA version: {e}")
         return None
-    
+
+# def install_package_with_conda(package_name, channel='conda-forge'):
+#     try:
+#         # Forming the command string
+#         command = f"conda install -c {channel} {package_name} -y"
+        
+#         # Execute the command
+#         subprocess.run(command, shell=True, check=True)
+#         print(f"{package_name} installed successfully.")
+#     except subprocess.CalledProcessError as e:
+#         print(f"An error occurred while installing {package_name}: {e}")
+
+
 def install_missing_packages():
     packages = [
         "numpy==1.23.4",
@@ -57,6 +69,9 @@ def install_missing_packages():
     for package in packages:
         print(f"Installing {package}...")
         subprocess.run(["pip", "install", package])
+
+    # Install NCCL 
+    # install_package_with_conda('nccl')
 
     print("Installation of missing packages complete!")
 

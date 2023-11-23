@@ -191,8 +191,53 @@ def low_resolution_img_interpolator(twix, image_3D_body_coils, image_3D_surface_
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats
 
-def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli , auto_rotation = 'Dicom', lamb = 0.5,tol = 1e-4, maxiter=500,apply_correction_to_sensitivity_maps = False,
-                             oversampling_phase_factor = 1):
+from typing import List, Any  # Import necessary types from the typing module
+
+def correction_map_generator(
+    twix: List,  
+    image_3D_body_coils: np.ndarray,  
+    image_3D_surface_coils: np.ndarray,  
+    data: np.ndarray,  
+    dim_info_data: List[str], 
+    num_sli: int,
+    auto_rotation: str = 'Dicom',
+    lamb: float = 0.5,
+    tol: float = 1e-4,
+    maxiter: int = 500,
+    apply_correction_to_sensitivity_maps: bool = False,
+    oversampling_phase_factor: int = 1):
+    
+    """
+    Generates correction maps for MRI images based on low resolution pre-scan.
+
+    This function processes MRI data to generate image correction maps and sensitivity correction maps. 
+    It supports handling both single and multiple parallel images. The processing is done slice-by-slice for 
+    the specified number of slices.
+
+    Parameters:
+    - twix: Overall raw data from the MRI scanner.
+    - image_3D_body_coils: Low resolution 3D image data from body coils.
+    - image_3D_surface_coils: Low resolution 3D image data from surface coils.
+    - data: extracted image data to be processed.
+    - dim_info_data: Dimension information for the data.
+    - num_sli: Number of slices to process.
+    - auto_rotation: Specifies the rotation mode (default is 'Dicom').
+    - lamb: Lambda parameter for regularization for finding the correction map(default is 0.5).
+    - tol: Tolerance for convergence for finding the correction map (default is 1e-4).
+    - maxiter: Maximum number of iterations for finding the correction map (default is 500).
+    - apply_correction_to_sensitivity_maps: Flag to apply correction to sensitivity maps while performing sense reconstruction(default is False).
+    - oversampling_phase_factor: Factor for phase oversampling, 3 is suggested when you have aliasing in your dataset (default is 1).
+
+    Returns:
+    - img_correction_map_all: Array of image correction maps for each slice.
+    - sensitivity_correction_map_all: Array of sensitivity correction maps for each slice.
+    - low_resolution_surface_coil_imgs: Low-resolution images from surface coils.
+    - img_quats: A list containing additional image data (quat format) for each slice.
+
+    Exceptions:
+    - Catches and handles exceptions related to data shape and dimension indexing, defaulting to specific array 
+      configurations in case of an error.
+    """
 
     try:
         par_num = data.shape[dim_info_data.index('Par')]
@@ -226,7 +271,6 @@ def correction_map_generator(twix, image_3D_body_coils, image_3D_surface_coils, 
                                                                                                                         correction_map3D = correction_map3D, correction_map3D_sense = correction_map3D_sense,
                                                                                                                         oversampling_phase_factor = oversampling_phase_factor)
 
-        #low_resolution_surface_coil_imgs[n,...] = x2d
         img_quats.append(img_quat)
 
     return img_correction_map_all, sensitivity_correction_map_all, low_resolution_surface_coil_imgs, img_quats

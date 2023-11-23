@@ -1,5 +1,5 @@
 #import pygrappa
-import cupy
+
 import numpy as np
 import sigpy as sp
 import sigpy.mri as mr
@@ -35,6 +35,10 @@ from helper_functions.Interpolation import quaternion_to_directions
 
 
 def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.003,crop=0, device=0):
+    try:
+        import cupy
+    except:
+        print("Cupy is not installed. Please install cupy to use GPU.")
     #check the available GPU
     try:
         with sp.Device(device):
