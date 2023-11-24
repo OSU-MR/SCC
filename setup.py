@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 setup(
     name='Surface Coil Intensity Correction',
     version='0.5',
-    packages=['surface_coil_intensity_correction'],
+    packages=['helper_functions'],
     # metadata to display on PyPI
     author='Xuan Lei',
     author_email='lei.337@osu.edu',
-    description='brightness_correction_map_generator_for_siemens_rawdata(twix)',
+    description='brightness correction map generator for siemens rawdata(twix)',
     long_description=open('README.md').read(),
-    url='',
+    url='https://github.com/OSU-MR/SCC',
     classifiers=[
         'License :: all-rights-reserved'
     ],
