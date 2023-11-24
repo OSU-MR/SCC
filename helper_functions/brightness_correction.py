@@ -221,7 +221,7 @@ def correction_map_generator(
     - data: extracted image data to be processed.
     - dim_info_data: Dimension information for the data.
     - num_sli: Number of slices to process.
-    - auto_rotation: Specifies the rotation mode (default is 'Dicom').
+    - auto_rotation: Specifies the rotation mode (default is 'Dicom', avaliable values: Dicom, LGE).
     - lamb: Lambda parameter for regularization for finding the correction map(default is 0.5).
     - tol: Tolerance for convergence for finding the correction map (default is 1e-4).
     - maxiter: Maximum number of iterations for finding the correction map (default is 500).
@@ -232,7 +232,7 @@ def correction_map_generator(
     - img_correction_map_all: Array of image correction maps for each slice.
     - sensitivity_correction_map_all: Array of sensitivity correction maps for each slice.
     - low_resolution_surface_coil_imgs: Low-resolution images from surface coils.
-    - img_quats: A list containing additional image data (quat format) for each slice.
+    - img_quats: A list containing quaternions for each slice.
 
     Exceptions:
     - Catches and handles exceptions related to data shape and dimension indexing, defaulting to specific array 
