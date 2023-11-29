@@ -1,4 +1,4 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OSU-MR/SCC/blob/main/brightness_correction_demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1TW16R86YZhVguLkZ_NcfcTJJ5zGWQPgN?usp=sharing)
 
 
 
