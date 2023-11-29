@@ -62,6 +62,7 @@ def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.
         mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
         if inversed_correction_map is not None:
             mps = np.multiply(mps,inversed_correction_map)
+        sense_img = mr.app.SenseRecon(ksp, mps).run()
         sense_img = complex_image_normalization(sense_img)
         sense_img = sense_img
 
