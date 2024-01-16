@@ -30,25 +30,21 @@ def download_file_from_figshare(saving_path, url):
 
 import subprocess
 
+
 def get_cuda_version():
     try:
-        nvcc_output = subprocess.check_output("nvcc --version", shell=True).decode()
-        cuda_version = re.search(r"release (\d+\.\d+)", nvcc_output).group(1)
-        return cuda_version
+        try:
+            import torch
+            cuda_version = torch.version.cuda
+            return cuda_version
+        except:
+            nvcc_output = subprocess.check_output("nvcc --version", shell=True).decode()
+            cuda_version = re.search(r"release (\d+\.\d+)", nvcc_output).group(1)
+            return cuda_version
+
     except Exception as e:
         print(f"Error getting CUDA version: {e}")
         return None
-
-# def install_package_with_conda(package_name, channel='conda-forge'):
-#     try:
-#         # Forming the command string
-#         command = f"conda install -c {channel} {package_name} -y"
-        
-#         # Execute the command
-#         subprocess.run(command, shell=True, check=True)
-#         print(f"{package_name} installed successfully.")
-#     except subprocess.CalledProcessError as e:
-#         print(f"An error occurred while installing {package_name}: {e}")
 
 
 def install_missing_packages():
@@ -62,7 +58,10 @@ def install_missing_packages():
 
     # Add CuPy package based on CUDA version
     if cuda_version:
-        packages.append(f"cupy-cuda{cuda_version.replace('.', '')}")
+        if cuda_version == '11.8':
+            packages.append(f"cupy==11.3.0")
+        else:
+            packages.append(f"cupy-cuda{cuda_version.replace('.', '')}")
     else:
         print("CUDA version not found. Skipping CuPy installation.")
 

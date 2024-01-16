@@ -207,23 +207,5 @@ def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
                                         points_3d_xyz[2, 0, 0, :]),
                                         abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0) #[:,:,::-1]
         zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
-        #np.save("correction_map.npy",zi_image)
         interpolated_img[...,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:-1])
     return np.squeeze(interpolated_img)
-
-
-# def cut_3D_cube(tmp_image_3D, points_3d_xyz, points_2d_xyz):
-#     try:
-#         dummy_var = tmp_image_3D.shape[3]
-#     except:
-#         tmp_image_3D = np.expand_dims(tmp_image_3D, axis=3)
-
-#     interpolated_2D_img = np.zeros((points_2d_xyz.shape[0],points_2d_xyz.shape[1],tmp_image_3D.shape[3]))
-#     for coil_idx in range(tmp_image_3D.shape[3]):
-#         interpolator = RegularGridInterpolator((points_3d_xyz[0, 0, :, 0],
-#                                         points_3d_xyz[1, :, 0, 0],
-#                                         points_3d_xyz[2, 0, 0, :]),
-#                                         abs(tmp_image_3D[:,:,::-1,coil_idx]),  bounds_error=False,fill_value = 0)#np.nan) #[:,:,::-1]
-#         zi_image = interpolator(points_2d_xyz[...,[0,1,2]])
-#         interpolated_2D_img[:,:,coil_idx] = zi_image.reshape(points_2d_xyz.shape[:2])
-#     return np.squeeze(interpolated_2D_img)

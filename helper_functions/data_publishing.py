@@ -3,6 +3,7 @@ import gzip
 import pickle
 from helper_functions.brightness_correction import rawdata_reader
 
+
 def change_file_extension(filename, new_extension):
     base_name = os.path.splitext(filename)[0]
     return base_name + new_extension
@@ -65,9 +66,12 @@ def extract_fields(entry):
 
     return new_data
 
-def data_publishing(path_input):
+def data_anonymization(path_input):
     '''
-    you can use this function to remove the sensitive information of the rawdata for publishing
+    you can use this function to remove the sensitive information of the rawdata for data anonymization
+    Usage:
+        full_path_list_to_rawdata = [path_to_rawdata1, path_to_rawdata2, ...]
+        data_anonymization(full_path_list_to_rawdata)
     
     '''
     for i, data_path_filename in enumerate(path_input):
@@ -93,4 +97,4 @@ def data_publishing(path_input):
         demo_filename = change_file_extension(data_path_filename, ".demo.gz")  # Note the added .gz extension
         with gzip.open(demo_filename, 'wb') as f:
             pickle.dump(packed_data, f)
-        print("Saved simplified data to", demo_filename)
+        print("Saved anonymized data to", demo_filename)

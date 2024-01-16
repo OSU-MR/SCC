@@ -59,6 +59,8 @@ def sense_reconstruction(ksp,ref_padded,inversed_correction_map = None,thresh=0.
             sense_img = sense_img
     except Exception as e:
         print("Tried using GPU but encountered this error: ", e)
+        print("For using GPU, you need to install specific version of cudatoolkit and cupy.")
+        print("please refer to https://github.com/OSU-MR/SCC/blob/main/SCC_env.txt for more information.")
         mps = mr.app.EspiritCalib(ref_padded,thresh=thresh,crop=crop).run()#(ref_padded,thresh=0.1,crop=0.50).run() #thresh=0.02,crop=0.05 good
         if inversed_correction_map is not None:
             mps = np.multiply(mps,inversed_correction_map)
@@ -75,7 +77,8 @@ def complex_image_normalization(img):
     magnitude = np.abs(img)
     #normalize magnitude
     magnitude = magnitude - np.min(magnitude)
-    magnitude = magnitude/np.max(magnitude)
+    if np.max(magnitude) != 0:
+        magnitude = magnitude/np.max(magnitude)
     #reconstruct complex image
     img = magnitude*np.exp(1j*phase)
     return img
@@ -85,52 +88,21 @@ def remove_edges(data):
     if data is None:
         return None
     #remove edges [1/4, ... , 1/4]
-    data = abs(data[:,int(data.shape[1]//4):-int(data.shape[1]//4)])#**0.4
+    data = abs(data[:,int(data.shape[1]//4):-int(data.shape[1]//4)])
     #flip the data to the right direction
     data = data[:,::-1,...]
 
     return data
-    # inter_img_body_coils = abs(Zi_body_coils[:,int(Zi_body_coils.shape[1]//4):-int(Zi_body_coils.shape[1]//4)])#**0.4
-    # inter_img_body_coils = inter_img_body_coils[:,::-1,...]
 
-    # inter_img_surface_coils = abs(Zi_surface_coils[:,int(Zi_surface_coils.shape[1]//4):-int(Zi_surface_coils.shape[1]//4)])#**0.4
-    # inter_img_surface_coils = inter_img_surface_coils[:,::-1,...]
-
-    # if correction_map_from_3D is not None:
-    #     correction_map_from_3D = abs(correction_map_from_3D[:,int(correction_map_from_3D.shape[1]//4):-int(correction_map_from_3D.shape[1]//4)])
-    #     correction_map_from_3D = correction_map_from_3D[:,::-1,...]
-
-    # if correction_map_from_3D is not None:
-    #     return inter_img_body_coils,inter_img_surface_coils,correction_map_from_3D
-    # else:
-    #     return inter_img_body_coils,inter_img_surface_coils
 import matplotlib.pyplot as plt
 def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
 
     if data is None:
         return None
     
-    #plot the data
-    try:
-        ...
-        # print(data.shape)
-        # plt.figure()
-        # plt.imshow(np.abs(data),cmap='gray')
-        # plt.show()
-    except:
-        pass
 
     data = data.reshape(oversampling_phase_factor,-1,data.shape[1])
 
-    # #plot the data
-    # try:
-    #     print(data.shape)
-    #     for i in range(data.shape[0]):
-    #         plt.figure()
-    #         plt.imshow(np.abs(data[i]),cmap='gray')
-    #         plt.show()
-    # except:
-    #     pass
 
     # # Calculate the sum of the images, ignoring nan values
     summed_image = np.nansum(data, axis=0)
@@ -140,63 +112,6 @@ def remove_oversampling_phase_direction(data, oversampling_phase_factor = 3):
 
     # Calculate the mean by dividing the summed_image by the number of non-nan values
     data = np.divide(summed_image, non_nan_count, where=non_nan_count!=0)
-
-    #plot the data
-    try:
-        ...
-        #print(data.shape)
-        #plt.figure()
-        #plt.imshow(np.abs(data),cmap='gray')
-        #plt.show()
-    except:
-        pass
-
-    #remove edges [1/4, ... , 1/4] in k-space
-    #first do fft to get k-space
-    # data = np.fft.fft2(data,axes=(0,1))
-    # try:
-    #     print(data.shape)
-    #     plt.figure()
-    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
-    #     plt.show()
-    # except:
-    #     pass
-    # data = np.fft.fftshift(data,axes=(0,1))
-
-    # try:
-    #     print(data.shape)
-    #     plt.figure()
-    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
-    #     plt.show()
-    # except:
-    #     pass
-    # #remove edges
-    # data = data[1::3,:]
-    # try:
-    #     print(data.shape)
-    #     plt.figure()
-    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
-    #     plt.show()
-    # except:
-    #     pass
-    # #do ifft to get image space
-    # data = np.fft.ifftshift(data,axes=(0,1))
-    # try:
-    #     print(data.shape)
-    #     plt.figure()
-    #     plt.imshow(np.abs(data)**0.3,cmap='gray')
-    #     plt.show()
-    # except:
-    #     pass
-    # data = np.fft.ifft2(data,axes=(0,1))
-
-    # try:
-    #     print(data.shape)
-    #     plt.figure()
-    #     plt.imshow(np.abs(data),cmap='gray')
-    #     plt.show()
-    # except:
-    #     pass
 
     return data
 

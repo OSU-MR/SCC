@@ -275,63 +275,42 @@ def fft_cropping_from64(A, target_shape = (128, 32, 32)):
     return A
 
 
-# def fft_cropping(A, target_shape = (128, 32, 32)):
-#     A = np.fft.fftn(A, axes=(0,1,2))
-#     A = np.fft.fftshift(A)
-#     #calculate the cropping size
-#     x, y, z = A.shape
-#     x2cut = (x - target_shape[0])//2
-#     y2cut = (y - target_shape[1])//2
-#     z2cut = (z - target_shape[2])//2
-#     #crop the matrix
-#     if x2cut > 0:
-#         A = A[x2cut:-x2cut,:,:]
-#     elif x2cut < 0:
-#         #we need to pad the matrix
-#         pad_len = -x2cut
-#         A = np.pad(A, ((pad_len, pad_len), (0, 0), (0, 0)), 'constant', constant_values=(0, 0)) 
-#     else:
-#         pass
+def choppingTo64x64x64(A):
+    #print(A.shape) #(128, 32, 32)
+    x, y, z = A.shape
 
-#     if y2cut > 0:
-#         A = A[:,y2cut:-y2cut,:]
-#     elif y2cut < 0:
-#         #we need to pad the matrix
-#         pad_len = -y2cut
-#         A = np.pad(A, ((0, 0), (pad_len, pad_len), (0, 0)), 'constant', constant_values=(0, 0))
-#     else:
-#         pass
+    if x == 64 and y == 64 and z == 64:
+        print("The matrix is already ", (64,64,64))
+        return A
+    else:
+        #cut the x dimension to 64
+        len2cut = (x - 64)//2
+        if len2cut > 0:
+            A = A[len2cut:-len2cut,:,:]
 
-#     if z2cut > 0:
-#         A = A[:,:,z2cut:-z2cut]
-#     elif z2cut < 0:
-#         #we need to pad the matrix
-#         pad_len = -z2cut
-#         A = np.pad(A, ((0, 0), (0, 0), (pad_len, pad_len)), 'constant', constant_values=(0, 0))
-#     else:
-#         pass
+        #cut the y dimension to 64
+        len2cut = (y - 64)//2
+        if len2cut > 0:
+            A = A[:,len2cut:-len2cut,:]
 
-#     A = np.fft.ifftshift(A)
-#     A = np.fft.ifftn(A, axes=(0,1,2))
-#     print("The 3D reference matrix has been cropped to", A.shape)
-#     return A
+        #cut the z dimension to 64
+        len2cut = (z - 64)//2
+        if len2cut > 0:
+            A = A[:,:,len2cut:-len2cut]
 
+        # Check the shape of the padded array
+        print("The 3D reference matrix has been chopped to", A.shape)
+        return A
 
-def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter=500, sensitivity_correction_maps=False, debug = False):
-    #save x3_s_in and x3_b_in in npy files
-    #np.save('x3_s_in.npy', x3_s_in)
-    #np.save('x3_b_in.npy', x3_b_in)
+def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter=500, sensitivity_correction_maps=False, debug = False, remove_readout_oversampling = False):
 
     x3_s_in = np.abs(extendTo128x64x64(x3_s_in))
     x3_b_in = np.abs(extendTo128x64x64(x3_b_in))
-    #x3_s_in = extendTo128x128x128(x3_s_in)
-    #x3_b_in = extendTo128x128x128(x3_b_in)
 
-    #x3_s_in = reshapeTo64x64x64(x3_s_in)
-    #x3_b_in = reshapeTo64x64x64(x3_b_in)
-
-    #x3_s = x3_s_in/np.max(x3_b_in)
-    #x3_b = x3_b_in/np.max(x3_b_in)    
+    #chop the matrix to 64x64x64
+    if remove_readout_oversampling:
+        x3_s_in = choppingTo64x64x64(x3_s_in)
+        x3_b_in = choppingTo64x64x64(x3_b_in)
 
     if sensitivity_correction_maps:
         x3_s = x3_s_in/np.max(x3_b_in)
@@ -344,21 +323,6 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
         x3_s = x3_s_in/np.max(x3_s_in)
         x3_b = x3_b_in/np.max(x3_s_in)
         
-    # plt.figure(figsize=(5, 10))
-    # plt.subplot(2, 2, 1)
-    # plt.imshow(np.abs(np.squeeze(x3_s[:, 32, :]))**1, cmap='gray')
-    # plt.axis('off')
-    # plt.colorbar()
-    # plt.title('surface coil')
-
-    # plt.subplot(2, 2, 2)
-    # plt.imshow(np.abs(np.squeeze(x3_b[:, 32, :]))**1, cmap='gray')
-    # plt.axis('off')
-    # plt.colorbar()
-    # plt.title('body coil')
-
-    
-
     if debug:
         print("*****************start********************")
         print(np.max(x3_s_in), np.max(x3_b_in))
@@ -370,7 +334,7 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
     assert x3_s.shape == x3_b.shape, "x3_s and x3_b must have the same shape"
 
     # Parameters
-    n = x3_s.shape#[64, 32, 32]
+    n = x3_s.shape#[128, 64, 64]
     nx, ny, nz = n
 
     # Start timing
@@ -451,36 +415,6 @@ def calculate_correction_map_3D(x3_s_in, x3_b_in, lamb = 1e-3, tol=1e-4, maxiter
     #return fft_cropping_from64(c)
     return fft_cropping_from64(c)
 
-
-# def myCGfun(B, y, tol, maxiter):
-#     try:
-#         m = len(y)
-#     except:
-#         m = y.shape[0]
-#     x = np.zeros(m)
-#     r = y - csr_matrix(B @ x).T
-#     x = csr_matrix(np.zeros(m)).T
-#     p = r
-#     r2old = r.T @ r
-    
-#     for iter in range(maxiter):
-#         Bp = B @ p
-#         alpha = complex(r2old / (p.T @ Bp))
-#         x = x + alpha * p
-#         r = r - alpha * Bp
-#         r2new = r.T @ r
-        
-#         if np.sqrt(r2new) >= tol:
-#             ...
-#         else:
-#             print(f'CG converged after {iter+1} iterations.')
-#             return x
-        
-#         p = r + complex(r2new / r2old) * p
-#         r2old = r2new
-    
-#     print('CG reached max iterations without converging.')
-#     return x
 
 
 # Custom CG function
