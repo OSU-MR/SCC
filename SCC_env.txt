@@ -7,5 +7,6 @@ pip install cupy-cu117
 
 For 4090:
 With activated environment(conda activate SCC):
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 conda install cudatoolkit=11.8.0
 pip install cupy==11.3.0
