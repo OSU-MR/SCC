@@ -1,0 +1,11 @@
+Possible environment for using GPU while sense reconstruction.
+
+For 3090:
+With activated environment(conda activate SCC):
+pip install cupy-cu117
+
+
+For 4090:
+With activated environment(conda activate SCC):
+conda install cudatoolkit=11.8.0
+pip install cupy==11.3.0
