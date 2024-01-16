@@ -1,8 +1,10 @@
-Possible environment for using GPU while sense reconstruction.
+Possible environments for using GPU (3090,4090) while sense reconstruction.
 
 For 3090:
 With activated environment(conda activate SCC):
-pip install cupy-cu117
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+conda install cudatoolkit=11.3.1
+pip install cupy-cuda113
 
 
 For 4090:
