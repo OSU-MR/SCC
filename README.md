@@ -5,25 +5,26 @@
 ## Surface Coil Intensity Correction (SCC)
 
 
-1. Create a new environment named SCC in conda and activate it:
-   * `conda create --name SCC python=3.8`
-   * `conda activate SCC`
-   * `conda install jupyterlab`
-   * `conda install ipykernel`
-   * `python -m ipykernel install --user --name=SCC`
+1. Create a new environment named SCC in conda and activate it with the following command:
    
+   ```
+   conda create --name SCC python=3.8 jupyterlab ipykernel -y && conda activate SCC && python -m ipykernel install --user --name=SCC --display-name "SCC"
+   ```
 
-2. Clone the GitHub repository to your local workstation
+3. Clone the GitHub repository to your local workstation
 
-3. Open `brightness_correction_demo.ipynb` in Anaconda, VS Code, etc.
+4. Open `brightness_correction_demo.ipynb` in Anaconda, VS Code, etc.
    * go to the folder you just downloaded: `cd path_to_the_folder_you_just_downloaded`
-   * run `jupyter notebook` in the terminal you open in 1 
-   * Make sure the SCC environment is selected
+   * run `jupyter notebook` in the terminal you open in 1
+   * ${{\color{Red}Make \space sure \space the \space SCC \space environment \space is \space selec ted \space ! \space ! \space !}}\$
    * Execute all cells in `brightness_correction_demo.ipynb`
-   
+
 
 ## For installing the package content (optional)
-Go to the path of the SCC folder and run the following command: `pip install -e`.
+Go to the path of the SCC folder and run the following command: 
+```
+pip install -e
+```
 
 ## Representative results
 <p align="center">
