@@ -52,6 +52,7 @@ def install_missing_packages():
         "numpy==1.23.4",
         "sigpy==0.1.25",
         "matplotlib==3.7.2",
+        "opencv-python"
     ]
 
     cuda_version = get_cuda_version()
