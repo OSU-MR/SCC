@@ -16,8 +16,12 @@
 4. Open `brightness_correction_demo.ipynb` in Anaconda, VS Code, etc.
    * go to the folder you just downloaded: `cd path_to_the_folder_you_just_downloaded`
    * run `jupyter notebook` in the terminal you open in 1
-   * ${{\color{Red}Make \space sure \space the \space SCC \space environment \space is \space selec ted \space ! \space ! \space !}}\$
    * Execute all cells in `brightness_correction_demo.ipynb`
+  >   [!important]  
+  >   Make sure the SCC environment is selected before executing the cells!
+
+
+   
 
 
 ## For installing the package content (optional)
@@ -37,4 +41,5 @@ pip install -e
 In preparation
 
    
+
 
