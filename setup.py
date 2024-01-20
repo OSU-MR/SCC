@@ -7,11 +7,11 @@ setup(
     # metadata to display on PyPI
     author='Xuan Lei',
     author_email='lei.337@osu.edu',
-    description='brightness correction map generator for siemens rawdata(twix)',
+    description='Brightness correction map generator for Siemens raw data (twix)',
     long_description=open('README.md').read(),
     url='https://github.com/OSU-MR/SCC',
     classifiers=[
         'License :: all-rights-reserved'
     ],
-    python_requires='>=3.8.10',
+    python_requires='>=3.8.10, <=3.9.18',
 )
