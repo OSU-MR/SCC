@@ -75,7 +75,7 @@ def remove_RO_oversamling(data, axis_RO = 0):
     data = np.moveaxis(data, axis_RO, 0)
     N = np.shape(data)
     num_dim = len(N)
-    data = np.reshape(data, [N[0], int(np.product(N)/N[0])])
+    data = np.reshape(data, [N[0], int(np.prod(N)/N[0])])
     # find the acquired k-space lines
     tmp_samp = np.where(np.abs(data[round(N[0]/2), :]) > 0)
     # extract the acquired k-space lines
@@ -98,7 +98,7 @@ def remove_RO_oversamling(data, axis_RO = 0):
     tmp_N = list(N)
     tmp_N[0] = Y.shape[0]
     data_no_os = np.zeros(tmp_N, dtype=np.complex_)
-    data_no_os = np.reshape(data_no_os, [tmp_N[0], int(np.product(tmp_N)/tmp_N[0])])
+    data_no_os = np.reshape(data_no_os, [tmp_N[0], int(np.prod(tmp_N)/tmp_N[0])])
     data_no_os[:, tmp_samp] = Y
     data_no_os = np.reshape(data_no_os, tmp_N)
     data_no_os = np.moveaxis(data_no_os, 0, axis_RO)
@@ -110,7 +110,7 @@ def remove_RO_oversamling(data, axis_RO = 0):
 def comp_noise_prewhitening(noise, axis_ch = 0):
     ## noise; axis_ch specify the cha dim
     noise = np.moveaxis(noise, axis_ch, 0)
-    noise = np.reshape(noise, [noise.shape[0], int(np.product(noise.shape)/noise.shape[0])])
+    noise = np.reshape(noise, [noise.shape[0], int(np.prod(noise.shape)/noise.shape[0])])
     cov_n = np.matmul(noise, np.matrix.getH(noise))/(noise.shape[1]-1)
     L = np.linalg.cholesky(cov_n)
     nw_mat = np.linalg.inv(L)
@@ -120,7 +120,7 @@ def comp_noise_prewhitening(noise, axis_ch = 0):
 def perf_noise_prewhitening(data, nw_mat, axis_ch = 0):
     data = np.moveaxis(data, axis_ch, 0)
     N_data = data.shape
-    data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
+    data = np.reshape(data, [N_data[0], int(np.prod(N_data)/N_data[0])])
     data = np.matmul(nw_mat, data)
     data = np.reshape(data, N_data)
     data = np.moveaxis(data, 0, axis_ch)
@@ -136,7 +136,7 @@ def estimate_noise_from_data(data, axis_spatial = [0,1,2], axis_ch = 3):
         data = np.moveaxis(data, tmp_axis, 0)
         N_data = data.shape
         if data.shape[0] > 1:
-            data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
+            data = np.reshape(data, [N_data[0], int(np.prod(N_data)/N_data[0])])
             edge_idx = np.maximum(1,np.minimum(16,round(data.shape[0]/edge_ratio[idx])))
             print(edge_idx)
             tmp1 = data[0:edge_idx,:]
@@ -145,7 +145,7 @@ def estimate_noise_from_data(data, axis_spatial = [0,1,2], axis_ch = 3):
             data = np.reshape(data, [data.shape[0]] + list(N_data[1:]))
         data = np.moveaxis(data, 0, tmp_axis)
     data = np.moveaxis(data,axis_ch,0)
-    data = np.reshape(data, [data.shape[0], int(np.product(data.shape)/data.shape[0])])
+    data = np.reshape(data, [data.shape[0], int(np.prod(data.shape)/data.shape[0])])
 
     CH = data.shape[0]
     n_std = np.zeros([CH])
@@ -173,7 +173,7 @@ def compress_data_with_pca(data, channel_keep, axis_CH = 0, extra_data = None, e
         print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
     data = np.moveaxis(data, axis_CH, 0)
     N_data = data.shape
-    data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
+    data = np.reshape(data, [N_data[0], int(np.prod(N_data)/N_data[0])])
     data = np.transpose(data, [1, 0])
     cov_matrix = np.matmul(np.matrix.getH(data),data)
     u,s,vh = LA.svd(cov_matrix)
@@ -193,7 +193,7 @@ def preform_compressing(data, channel_keep, axis_CH, N_data, u, reshape_flag = F
         print('compress ',data.shape[axis_CH],' to ',channel_keep,' channels')
         data = np.moveaxis(data, axis_CH, 0)
         N_data = data.shape
-        data = np.reshape(data, [N_data[0], int(np.product(N_data)/N_data[0])])
+        data = np.reshape(data, [N_data[0], int(np.prod(N_data)/N_data[0])])
         data = np.transpose(data, [1, 0])
 
     #print("data.shape:",data.shape)
@@ -201,7 +201,7 @@ def preform_compressing(data, channel_keep, axis_CH, N_data, u, reshape_flag = F
     data = np.matmul(data, u)
     data_compressed = data[:,0:channel_keep]
     data_compressed = np.transpose(data_compressed, [1,0])
-    data_compressed = np.reshape(data_compressed, [channel_keep, int(np.product(N_data)/N_data[0])])
+    data_compressed = np.reshape(data_compressed, [channel_keep, int(np.prod(N_data)/N_data[0])])
     data_compressed = np.reshape(data_compressed, list([channel_keep]) + list(N_data[1:]))
     data_compressed = np.moveaxis(data_compressed, 0, axis_CH)
     return data_compressed
