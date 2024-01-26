@@ -12,9 +12,9 @@
 
 > [!IMPORTANT]
 > If you have compatibility issues, try the following command to create your Conda environment instead:
-   ```
-   conda create --name SCC python=3.8 jupyterlab ipykernel -y && conda activate SCC && python -m ipykernel install --user --name=SCC --display-name "SCC"
-   ```
+>   ```
+>   conda create --name SCC python=3.8 jupyterlab ipykernel -y && conda activate SCC && python -m ipykernel install --user --name=SCC --display-name "SCC"
+>   ```
 
 3. Clone the GitHub repository to your local workstation
 
