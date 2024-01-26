@@ -48,12 +48,33 @@ def get_cuda_version():
 
 
 def install_missing_packages():
-    packages = [
-        "numpy==1.23.4",
-        "sigpy==0.1.25",
-        "matplotlib==3.7.2",
-        "opencv-python"
-    ]
+    # Extract the major, minor, and micro parts of the Python version
+    major, minor, micro = sys.version_info[:3]
+
+    # Define the packages list based on the Python version
+    if (major, minor, micro) >= (3, 8, 10) and (major, minor, micro) <= (3, 9, 18):
+        packages = [
+            "numpy==1.23.4",
+            "sigpy==0.1.25",
+            "matplotlib==3.7.2",
+            "opencv-python"
+        ]
+    elif (major, minor, micro) > (3, 9, 18):
+        packages = [
+            "numpy",
+            "sigpy",
+            "matplotlib",
+            "opencv-python"
+        ]
+    else:
+        #print in red
+        print("\033[91m" + "Your Python version is quite low and may encounter compatibility issues!" + "\033[0m")
+        packages = [
+            "numpy==1.23.4",
+            "sigpy==0.1.25",
+            "matplotlib==3.7.2",
+            "opencv-python"
+        ]
 
     cuda_version = get_cuda_version()
 
