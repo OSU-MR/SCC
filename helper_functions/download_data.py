@@ -46,7 +46,7 @@ def get_cuda_version():
         print(f"Error getting CUDA version: {e}")
         return None
 
-
+import sys
 def install_missing_packages():
     # Extract the major, minor, and micro parts of the Python version
     major, minor, micro = sys.version_info[:3]
