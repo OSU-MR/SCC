@@ -43,7 +43,7 @@ pip install -e
 </p>
 
 ## Pulication
-In preparation
+https://arxiv.org/abs/2312.00936
 
    
 
