@@ -149,7 +149,7 @@ def recursive_delete_dir(target_dir):
     # Once the directory is empty, delete it
     os.rmdir(target_dir)
 
-def install_twixtools():
+def install_twixtools(install_missing_packages = False):
     # URL of the zip file
     url = "https://codeload.github.com/pehses/twixtools/zip/refs/heads/master"
     target_path = "twixtools-master.zip"
@@ -175,12 +175,7 @@ def install_twixtools():
         os.remove('./helper_functions/map_twix.py')
     
     
-    # Check and install numpy if required
-    if not check_numpy_version():
-        print("Installing numpy...")
-        subprocess.run(["pip", "install", "numpy>=1.17.3"])
-    else:
-        print("Sufficient numpy version is already installed.")
+
     
     # Installing twixtools
     os.chdir("twixtools-master")
@@ -194,7 +189,20 @@ def install_twixtools():
     directory_to_delete = 'twixtools-master'
     recursive_delete_dir(directory_to_delete)
 
-    #install missing packages
-    install_missing_packages()
+    if install_missing_packages:
+        # Check and install numpy if required
+        if not check_numpy_version():
+            print("Installing numpy...")
+            subprocess.run(["pip", "install", "numpy>=1.17.3"])
+        else:
+            print("Sufficient numpy version is already installed.")
+        #install other missing packages
+        install_missing_packages()
+    else:
+        print("Ensure you have installed the following packages manually:")
+        print("For Python version between 3.8.10 ~ 3.9.18")
+        print("numpy==1.23.4, sigpy==0.1.25, matplotlib==3.7.2, opencv-python")
+        print("For Python version higher than 3.9.18")
+        print("numpy, sigpy, matplotlib, opencv-python")
     
     print("Installation complete!")
