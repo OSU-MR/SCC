@@ -149,7 +149,7 @@ def recursive_delete_dir(target_dir):
     # Once the directory is empty, delete it
     os.rmdir(target_dir)
 
-def install_twixtools(install_missing_packages = False):
+def install_twixtools(auto_install_missing_packages = False):
     # URL of the zip file
     url = "https://codeload.github.com/pehses/twixtools/zip/refs/heads/master"
     target_path = "twixtools-master.zip"
@@ -189,7 +189,7 @@ def install_twixtools(install_missing_packages = False):
     directory_to_delete = 'twixtools-master'
     recursive_delete_dir(directory_to_delete)
 
-    if install_missing_packages:
+    if auto_install_missing_packages:
         # Check and install numpy if required
         if not check_numpy_version():
             print("Installing numpy...")
