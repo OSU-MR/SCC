@@ -15,17 +15,17 @@ def readtwix_arry_all(data_path = None, filename = None, data_path_filename = No
             twix = twixtools.read_twix(data_path_filename, keep_syncdata_and_acqend=True)
         except:
             try:
-                twix = twixtools.read_twix(data_path_filename, keep_syncdata = True , keep_acqend = True)
+                twix = twixtools.read_twix(data_path_filename, parse_pmu = False, keep_syncdata = True , keep_acqend = True)
             except:
-                twix = twixtools.read_twix(data_path_filename, keep_syncdata = False , keep_acqend = True)
+                twix = twixtools.read_twix(data_path_filename, parse_pmu = False, keep_syncdata = False , keep_acqend = True)
     elif data_path is not None and filename is not None:
         try:
             twix = twixtools.read_twix(os.path.join(data_path, filename), keep_syncdata_and_acqend=True)
         except:
             try:
-                twix = twixtools.read_twix(os.path.join(data_path, filename), keep_syncdata = True , keep_acqend = True)
+                twix = twixtools.read_twix(os.path.join(data_path, filename), parse_pmu = False, keep_syncdata = True , keep_acqend = True)
             except:
-                twix = twixtools.read_twix(os.path.join(data_path, filename), keep_syncdata = False , keep_acqend = True)
+                twix = twixtools.read_twix(os.path.join(data_path, filename), parse_pmu = False, keep_syncdata = False , keep_acqend = True)
     #mapped = twixtools.map_twix(twix[-1])
     print('\nnumber of separate scans (multi-raid):', len(twix))
     
