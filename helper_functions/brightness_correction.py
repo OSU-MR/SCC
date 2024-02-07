@@ -188,7 +188,7 @@ def rawdata_reader(data_path_filename):
              'dim_info_ref', and 'num_sli'.
     """
     try:
-        twix, mapped_data, data_org, dim_info_org, data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename)
+        twix, mapped_data, data_org, dim_info_org, data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename = data_path_filename)
 
         data = data_org.squeeze()   # this will squeeze the dimensions
         dim_info_data = dim_info_org.copy()
