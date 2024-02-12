@@ -23,7 +23,7 @@
 
    **In the terminal you opened in step 1, do the following steps:**
    * Navigate to the folder you just downloaded using:  `cd path_to_the_folder_you_just_downloaded`
-   * Run `jupyter notebook` in the terminal
+   * Run `jupyter lab` in the terminal
    * Execute all cells in `brightness_correction_demo.ipynb` for a quick verification. If you can see the demo output, it means you have successfully installed and configured SCC.
   >   [!important]  
   >   Ensure the SCC environment is selected before executing the cells!
