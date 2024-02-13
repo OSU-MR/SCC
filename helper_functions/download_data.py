@@ -164,15 +164,21 @@ def install_twixtools(auto_install_missing_packages = False):
         zip_ref.extractall(".")
 
     # Replace twix_map.py with the one in current directory
-    print("Replacing twix_map.py...")
+    print("Replacing twix_map.py and geometry.py...")
     try:
         copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
+        copy_file('./helper_functions/geometry.py', './twixtools-master/twixtools/geometry.py')
     except FileNotFoundError:
         #download the modified twixtools
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
         download_file_from_figshare('./helper_functions/',url_map_twix)
         copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
         os.remove('./helper_functions/map_twix.py')
+        #download the modified geometry.py
+        url_geomery_twix = "https://figshare.com/ndownloader/files/44520365"
+        download_file_from_figshare('./helper_functions/',url_geomery_twix)
+        copy_file('./helper_functions/geometry.py', './twixtools-master/twixtools/geometry.py')
+        os.remove('./helper_functions/geometry.py')
     
     
 
