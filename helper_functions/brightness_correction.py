@@ -897,8 +897,8 @@ def displaying_results(base_dir, input_folder, output_folder, folder_names=None,
             for filename in os.listdir(full_dir_name):
                 #if filename.find('SAX') != -1: #this is a file filter uncomment this line and change the SAX to the keyword you want to filter
                 # Construct the full file path
-                    #skip if the file starts with .ipynb_checkpoints.
-                    if filename.startswith('.ipynb_checkpoints'):
+                    #display if the file ends with .dat and .gz.
+                    if not filename.endswith('.dat') and not filename.endswith('.gz'):
                         continue
                 
                     filename = filename[:-4]
