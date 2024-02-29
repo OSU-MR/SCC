@@ -43,6 +43,9 @@ pip install -e
   <img src="2ch-results.png" alt="representative results"/>
   <br/>
   <i>Figure 1: From left to right, correction map for the image, correction map for the sensitivity maps, magnitude of the uncorrected image, magnitude of the image corrected with the first correction map, the magnitude of the image where the sensitivity maps are corrected with the second correction map. A representative two-chamber view of the heart is shown.</i>
+  <img src="LAX-results.png" alt="representative results"/>
+  <br/>
+  <i>Figure 2: From left to right, correction map for the image, correction map for the sensitivity maps, magnitude of the uncorrected image, magnitude of the image corrected with the first correction map, the magnitude of the image where the sensitivity maps are corrected with the second correction map. A representative long axis view of the heart is shown.</i>
 </p>
 
 ## Pulication
