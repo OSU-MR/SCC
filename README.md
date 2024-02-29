@@ -5,14 +5,14 @@
 ## Surface Coil Intensity Correction (SCC)
 
 
-1. Create a new environment named SCC in Conda and activate it with the following command (don't close the terminal, we will use it in step 3):
+1. Create a new environment named SCC in Conda and activate it with the following command (Don't close the terminal, we will use it in step 3):
    * Open a new terminal and run the following command:
    ```
    conda create --name SCC python jupyterlab ipykernel -y && conda activate SCC && python -m ipykernel install --user --name=SCC --display-name "SCC"
    ```
 
 > [!IMPORTANT]
-> If you have compatibility issues, try the following command to create your Conda environment instead:
+> If you have **compatibility issues**, try the following command to create your Conda environment instead:
 >   ```
 >   conda create --name SCC python=3.8 jupyterlab ipykernel -y && conda activate SCC && python -m ipykernel install --user --name=SCC --display-name "SCC"
 >   ```
