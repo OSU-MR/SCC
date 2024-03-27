@@ -174,24 +174,13 @@ def target_path_generator(base_dir, input_folder, output_folder, input_subfolder
 
     return data_path_names, data_path_names_output
 
-def try_gz_reading(data_path_filename):
-    with gzip.open(data_path_filename, 'rb') as f:
-        loaded_data = pickle.load(f)
-    return [loaded_data[key] for key in ['twix', 'image_3D_body_coils', 'image_3D_surface_coils', 
-                                         'data', 'dim_info_data', 'data_ref', 'dim_info_ref', 'num_sli']]
 
-def try_readtwix_arry_all(data_path_filename):
-    twix, mapped_data, data_org, dim_info_org, data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename=data_path_filename)
-    data = data_org.squeeze()
-    dim_info_data = dim_info_org.copy()
-    image_3D_body_coils, image_3D_surface_coils = generate_3D_data(mapped_data)
-    num_sli = data.shape[dim_info_org.index('Sli')] if 'Sli' in dim_info_org else 1
-    return [twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli]
 
 def rawdata_reader(data_path_filename):
     """
-    Reads raw data from a given file path, intelligently handling both .demo.gz files and regular files.
-    It tries gz reading first for .gz files, then readtwix_arry_all, and vice versa for non-gz files.
+    Reads raw data from a given file path.
+    if data_path_filename ends with .demo.gz, then it is a demo file otherwise it is a rawdata file
+    the code can handle both cases
 
     :param data_path_filename: Path to the data file.
     :return: Multiple data items including 'twix', 'image_3D_body_coils', 
@@ -199,68 +188,35 @@ def rawdata_reader(data_path_filename):
              'dim_info_ref', and 'num_sli'.
     """
     try:
-        if data_path_filename.endswith('.demo.gz'):
-            # Try gz reading first for files ending with .gz
-            try:
-                data_elements = try_gz_reading(data_path_filename)
-            except Exception:
-                # If gz reading fails, try readtwix_arry_all
-                data_elements = try_readtwix_arry_all(data_path_filename)
-        else:
-            # For non-gz files, try readtwix_arry_all first
-            try:
-                data_elements = try_readtwix_arry_all(data_path_filename)
-            except Exception:
-                # If readtwix_arry_all fails, try gz reading
-                data_elements = try_gz_reading(data_path_filename)
-    except Exception as e:
-        raise IOError(f"Failed to read data from {data_path_filename}: {e}")
+        twix, mapped_data, data_org, dim_info_org, data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename = data_path_filename)
 
-    print(f'Number of slices in the rawdata: {data_elements[-1]}')
-    return tuple(data_elements)
+        data = data_org.squeeze()   # this will squeeze the dimensions
+        dim_info_data = dim_info_org.copy()
+        # end of reading the data
 
-# def rawdata_reader(data_path_filename):
-#     """
-#     Reads raw data from a given file path.
-#     if data_path_filename ends with .demo.gz, then it is a demo file otherwise it is a rawdata file
-#     the code can handle both cases
+        # unpack the mapped_data
+        image_3D_body_coils, image_3D_surface_coils = generate_3D_data(mapped_data)
 
-#     :param data_path_filename: Path to the data file.
-#     :return: Multiple data items including 'twix', 'image_3D_body_coils', 
-#              'image_3D_surface_coils', 'data', 'dim_info_data', 'data_ref', 
-#              'dim_info_ref', and 'num_sli'.
-#     """
-    
-#     try:
-#         twix, mapped_data, data_org, dim_info_org, data_ref, dim_info_ref, noise_kspace, dim_info_noise = readtwix_arry_all(data_path_filename = data_path_filename)
+        num_sli = data.shape[dim_info_org.index('Sli')] if 'Sli' in dim_info_org else 1
 
-#         data = data_org.squeeze()   # this will squeeze the dimensions
-#         dim_info_data = dim_info_org.copy()
-#         # end of reading the data
+    except:
+        # Load the compressed data from the .demo.gz file
+        with gzip.open(data_path_filename, 'rb') as f:
+            loaded_data = pickle.load(f)
 
-#         # unpack the mapped_data
-#         image_3D_body_coils, image_3D_surface_coils = generate_3D_data(mapped_data)
+        # Extract the individual datasets from the loaded data
+        twix = loaded_data['twix']
+        image_3D_body_coils = loaded_data['image_3D_body_coils']
+        image_3D_surface_coils = loaded_data['image_3D_surface_coils']
+        data = loaded_data['data']
+        dim_info_data = loaded_data['dim_info_data']
+        data_ref = loaded_data['data_ref']
+        dim_info_ref = loaded_data['dim_info_ref']
+        num_sli = loaded_data['num_sli']
 
-#         num_sli = data.shape[dim_info_org.index('Sli')] if 'Sli' in dim_info_org else 1
+    print('Number of slices in the rawdata: ', num_sli)
 
-#     except:
-#         # Load the compressed data from the .demo.gz file
-#         with gzip.open(data_path_filename, 'rb') as f:
-#             loaded_data = pickle.load(f)
-
-#         # Extract the individual datasets from the loaded data
-#         twix = loaded_data['twix']
-#         image_3D_body_coils = loaded_data['image_3D_body_coils']
-#         image_3D_surface_coils = loaded_data['image_3D_surface_coils']
-#         data = loaded_data['data']
-#         dim_info_data = loaded_data['dim_info_data']
-#         data_ref = loaded_data['data_ref']
-#         dim_info_ref = loaded_data['dim_info_ref']
-#         num_sli = loaded_data['num_sli']
-
-#     print('Number of slices in the rawdata: ', num_sli)
-
-#     return twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli
+    return twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, data_ref, dim_info_ref, num_sli
 
 
 def low_resolution_img_interpolator(twix, image_3D_body_coils, image_3D_surface_coils, data, dim_info_data, num_sli, auto_rotation='Dicom'):
@@ -478,7 +434,7 @@ def save_sense_recon_results(full_dir_name_output, sense_recon_results, img_corr
         np.save(base_filename + ".sensitivity_correction_map.npy", sens_correction_map)
 
     try:
-        np.save(base_filename + ".quat.npy", quat[0])   #save quat and slc_dir for future debugging
+        np.save(base_filename + ".quat.npy", quat)   #save quat and slc_dir for future debugging
     except Exception:
         pass  # Handle potential errors in saving quat
 
@@ -996,6 +952,13 @@ def displaying_results(base_dir, input_folder, output_folder, folder_names=None,
                     try:
                         quat_filename = os.path.join(full_dir_name_output, f"{filename}.quat.npy")
                         quat = np.load(quat_filename, allow_pickle=True)
+                        try:
+                            quat = quat[sli_idx]
+                        except:
+                            try:
+                                quat = quat[0]
+                            except:
+                                quat = quat
                         *_, slc_dir_vec = quaternion_to_directions(quat)
 
                     except:

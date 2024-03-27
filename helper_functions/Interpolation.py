@@ -38,6 +38,7 @@ def generate_3D_data(mapped_data ,pre_scan = 0):
 
 def rps_from_quat(data_idx = 0, img_ori = None, twix= None):
 
+
     try:
         image_mdbs = [mdb for mdb in twix[data_idx]['mdb'] if mdb.is_image_scan()]
         img_ori = image_mdbs[0].mdh.SliceData.Quaternion if img_ori is None else img_ori
@@ -84,8 +85,9 @@ def quaternion_to_directions(quat):
 def points_rps2xyz(scan_index = 0, twix = None, 
                    fov = None, resolution = None, 
                    rotmatrix = None, offset = None,
-                   rotmatrix_3d = None ,offset_0 = None,
-                   voxelsize = None, num_sli = None, n = None, oversampling_phase_factor = 3):
+                   rotmatrix_3d = None ,offset_0 = None,img_quat_scan_0 = None,
+                   voxelsize = None, num_sli = None, n = None, oversampling_phase_factor = 3,
+                   index_method = 1):
     
 
 
@@ -102,19 +104,76 @@ def points_rps2xyz(scan_index = 0, twix = None,
     ##################
     rotmatrix = np.array(geo.rotmatrix) if rotmatrix is None else np.array(rotmatrix)
     ###################
-    try:
-        image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
-        img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.Quaternion
-    except:
-        image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb['is_image_scan']]
-        img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n]['Quaternion']
-
-    if scan_index != 0:
+    if index_method == 0:
         try:
-            offset  = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.SlicePos
+            image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
+            img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.Quaternion
         except:
-            offset  = image_mdbs[(len(image_mdbs)//num_sli)*n]['SlicePos']
-        offset  = [offset.Sag,offset.Cor,offset.Tra]
+            image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb['is_image_scan']]
+            img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n]['Quaternion']
+
+        if scan_index != 0:
+            try:
+                offset  = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.SlicePos
+            except:
+                offset  = image_mdbs[(len(image_mdbs)//num_sli)*n]['SlicePos']
+            offset  = [offset.Sag,offset.Cor,offset.Tra]
+
+    elif index_method == 1:
+
+        try:
+            image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
+        except:
+            image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb['is_image_scan']]
+
+        # Initialize an empty list for the compressed data
+        compressed_data_Quaternion = []
+        compressed_data_SlicePos = []
+
+        # Initialize a variable to keep track of the last unique data
+        # This time, we initialize it as None, but wrapped in a NumPy array for compatibility with array_equal
+        last_unique_data_quat = np.array(None)
+        last_unique_data_pos = None
+
+        # Iterate through the desired range of indices in image_mdbs
+        for i in range(len(image_mdbs)):
+            # Access the data at the current index
+            try:
+                current_data_quat = image_mdbs[i].mdh.SliceData.Quaternion
+                current_data_pos  = image_mdbs[i].mdh.SliceData.SlicePos
+            except:
+                current_data_quat = image_mdbs[i]['Quaternion']
+                current_data_pos  = image_mdbs[i]['SlicePos']
+            
+            # Check if current data is different from the last added data to compressed_data
+            # Use numpy.array_equal for comparison to avoid ValueError
+            if (not np.array_equal(current_data_quat, last_unique_data_quat)) or ( current_data_pos.Sag != last_unique_data_pos.Sag or current_data_pos.Cor != last_unique_data_pos.Cor or current_data_pos.Tra != last_unique_data_pos.Tra):
+                # If it's different, add it to compressed_data and update last_unique_data
+                compressed_data_Quaternion.append(current_data_quat)
+                last_unique_data_quat = current_data_quat
+
+                compressed_data_SlicePos.append(current_data_pos)
+                last_unique_data_pos = current_data_pos
+
+
+        if len(compressed_data_Quaternion) == 1:
+            img_quat = compressed_data_Quaternion[0]
+        else:
+            img_quat = compressed_data_Quaternion[n]#compressed_data_Quaternion[n]
+        
+        if scan_index != 0:
+            if len(compressed_data_SlicePos) == 1:
+                offset = compressed_data_SlicePos[0]#compressed_data_SlicePos[n]
+            else:
+                offset = compressed_data_SlicePos[n]#compressed_data_SlicePos[n]
+            offset  = [offset.Sag,offset.Cor,offset.Tra]
+    
+
+    else:
+        # raise error for unknown index_method
+        # index_method can only be 0 or 1
+        raise ValueError("index_method can only be 0 or 1.")
+
     #print(img_quat)
     #print(offset)
     ##############
@@ -123,9 +182,20 @@ def points_rps2xyz(scan_index = 0, twix = None,
     GlobalTablePosTra = 0 if twix[scan_index]['hdr']['Config']['GlobalTablePosTra'] == '' else twix[scan_index]['hdr']['Config']['GlobalTablePosTra']
     #print("table position",GlobalTablePosCor,GlobalTablePosSag,GlobalTablePosTra)
 
-    offset = np.array(geo.offset) if offset is None else np.array(offset)
-    offset = np.array([-offset[0] , -offset[1]  ,-offset[2] ])
+
+
+    
+
+    try:
+        offset = np.array(geo.offset) if offset is None else np.array(offset)
+        offset = np.array([-offset[0] , -offset[1]  ,-offset[2] ])
+    except:
+        offset = np.array(geo.offset) if offset is None else offset
+        offset = offset[()]
+        #offset['Sag'], offset['Cor'], offset['Tra']])
+        offset = np.array([-offset['Sag'] , -offset['Cor']  ,-offset['Tra'] ])
     #print("offset",offset)
+
 
     r = 0.5*np.linspace(-1,1,resolution[reado_idx])*fov[reado_idx]+voxelsize[reado_idx]/2
     p = 0.5*np.linspace(-1,1,resolution[phase_idx])*fov[phase_idx]+voxelsize[phase_idx]/2
@@ -147,9 +217,8 @@ def points_rps2xyz(scan_index = 0, twix = None,
         #print("rotmatrix:\n",rotmatrix)
         points_xyz = points_rps
     elif scan_index == 1:
- 
-        points_xyz = np.dot( rps_from_quat(0,twix = twix) , (np.dot(  np.linalg.inv(rps_from_quat(1,twix = twix))  ,points_rps) + offset[:, np.newaxis]) -   offset_0[:, np.newaxis] )
-
+        points_xyz = np.dot( rps_from_quat(0, twix = twix, img_ori = img_quat_scan_0) , (np.dot(  np.linalg.inv(rps_from_quat(1, twix = twix, img_ori = img_quat))  ,points_rps) + offset[:, np.newaxis]) -   offset_0[:, np.newaxis] )
+        
     #print(geo)
     #print(geo.resolution)
     #print(geo.fov)
@@ -158,9 +227,9 @@ def points_rps2xyz(scan_index = 0, twix = None,
 
 import matplotlib.pyplot as plt
 def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversampling_phase_factor = 3):
-    points_3d_xyz , rotmatrix3d, offset, _,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
+    points_3d_xyz , rotmatrix3d, offset, img_quat,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
 
-    points_2d_xyz , *_ , img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
+    points_2d_xyz , *_ , offset2, img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,img_quat_scan_0 = img_quat,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
     #when dim_info_org.index('Par') has a value and the value is bigger than 1 we don't need points_2d_xyz = np.mean(points_2d_xyz,2), the 'Par' doesn't always exist in the dim_info_org
     # print(dim_info_org)
@@ -181,6 +250,8 @@ def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversamp
             output_data.append(cut_3D_cube(data, points_3d_xyz, points_2d_xyz))
         else:
             output_data.append(None)
+
+    #print("num_sli, n, offset, offset2, img_quat, rotmatrix", num_sli, n, offset, offset2, img_quat, rotmatrix3d)
 
     return output_data, img_quat, normal
 
