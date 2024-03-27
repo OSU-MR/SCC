@@ -274,7 +274,8 @@ def correction_map_generator(
     maxiter: int = 500,
     apply_correction_to_sensitivity_maps: bool = False,
     oversampling_phase_factor: int = 1,
-    remove_readout_oversampling: bool = False):
+    remove_readout_oversampling: bool = False,
+    par_index_method: int = 1):
 
     """
     Generates correction maps for MRI images based on low resolution pre-scan.
@@ -297,6 +298,7 @@ def correction_map_generator(
     - apply_correction_to_sensitivity_maps: Flag to apply correction to sensitivity maps while performing sense reconstruction(default is False).
     - oversampling_phase_factor: Factor for phase oversampling, 3 is suggested when you have aliasing in your dataset (default is 1).
     - remove_readout_over_sampling: Flag to remove readout oversampling. When True the shape of low resolution images: 64x64x64, when False,the shape is 128x64x64  (default is False).
+    - par_index_method: Method to determine the method for fetching quaternions and offsets for different slices, try set it to 0 if the output results do not match your data. (default is 1).
 
     Returns:
     - img_correction_map_all: Array of image correction maps for each slice.
@@ -336,7 +338,8 @@ def correction_map_generator(
                                              correction_map3D=correction_map3D, 
                                              correction_map3D_sense=correction_map3D_sense, 
                                              oversampling_phase_factor=oversampling_phase_factor,
-                                             remove_readout_oversampling=remove_readout_oversampling)
+                                             remove_readout_oversampling=remove_readout_oversampling,
+                                             par_index_method = par_index_method)
 
         img_correction_map_all, img_quat, low_resolution_surface_coil_imgs, sensitivity_correction_map_all, correction_map3D, correction_map3D_sense = result
         img_quats.append(img_quat)
@@ -621,7 +624,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
                                 data, image_3D_body_coils, image_3D_surface_coils, 
                                 num_sli, correction_map_all,inversed_correction_map_all, low_resolution_surface_coil_imgs,n, lamb = 1e-3,tol = 1e-4, maxiter=500, 
                                 apply_correction_to_sensitivity_maps = False, correction_map3D = None , correction_map3D_sense = None,oversampling_phase_factor = 1,
-                                remove_readout_oversampling = False):
+                                remove_readout_oversampling = False, par_index_method = 1):
 
 
     # Initialize correction maps if not provided
@@ -646,7 +649,7 @@ def calculating_correction_maps(auto_rotation, twix, dim_info_org,
     interpolated_data, img_quat, _ = interpolation(
         twix, data, dim_info_org, num_sli, n,
         [image_3D_body_coils, image_3D_surface_coils, correction_map3D, correction_map3D_sense],
-        oversampling_phase_factor=oversampling_phase_factor
+        oversampling_phase_factor=oversampling_phase_factor, par_index_method = par_index_method
     )
     
     inter_img_body_coils, inter_img_surface_coils, correction_map_from_3D, correction_map_from_3D_sense = interpolated_data

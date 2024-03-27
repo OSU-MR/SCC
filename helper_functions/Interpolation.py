@@ -87,7 +87,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
                    rotmatrix = None, offset = None,
                    rotmatrix_3d = None ,offset_0 = None,img_quat_scan_0 = None,
                    voxelsize = None, num_sli = None, n = None, oversampling_phase_factor = 3,
-                   index_method = 1):
+                   par_index_method = 1):
     
 
 
@@ -104,7 +104,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
     ##################
     rotmatrix = np.array(geo.rotmatrix) if rotmatrix is None else np.array(rotmatrix)
     ###################
-    if index_method == 0:
+    if par_index_method == 0:
         try:
             image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
             img_quat = image_mdbs[(len(image_mdbs)//num_sli)*n].mdh.SliceData.Quaternion
@@ -119,7 +119,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
                 offset  = image_mdbs[(len(image_mdbs)//num_sli)*n]['SlicePos']
             offset  = [offset.Sag,offset.Cor,offset.Tra]
 
-    elif index_method == 1:
+    elif par_index_method == 1:
 
         try:
             image_mdbs = [mdb for mdb in twix[scan_index]['mdb'] if mdb.is_image_scan()]
@@ -170,9 +170,9 @@ def points_rps2xyz(scan_index = 0, twix = None,
     
 
     else:
-        # raise error for unknown index_method
-        # index_method can only be 0 or 1
-        raise ValueError("index_method can only be 0 or 1.")
+        # raise error for unknown par_index_method
+        # par_index_method can only be 0 or 1
+        raise ValueError("par_index_method can only be 0 or 1.")
 
     #print(img_quat)
     #print(offset)
@@ -226,10 +226,10 @@ def points_rps2xyz(scan_index = 0, twix = None,
     return points_xyz.reshape((-1,)+RR.shape) , rotmatrix, offset , img_quat, geo.normal
 
 import matplotlib.pyplot as plt
-def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversampling_phase_factor = 3):
-    points_3d_xyz , rotmatrix3d, offset, img_quat,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n)
+def interpolation(twix, data_org, dim_info_org, num_sli, n, input_data, oversampling_phase_factor = 3, par_index_method = 1):
+    points_3d_xyz , rotmatrix3d, offset, img_quat,_ = points_rps2xyz(0,twix= twix,num_sli = num_sli, n = n, par_index_method = par_index_method)
 
-    points_2d_xyz , *_ , offset2, img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,img_quat_scan_0 = img_quat,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor)
+    points_2d_xyz , *_ , offset2, img_quat, normal = points_rps2xyz(1, twix= twix,rotmatrix_3d = rotmatrix3d, offset_0 = offset,img_quat_scan_0 = img_quat,num_sli = num_sli, n = n, oversampling_phase_factor = oversampling_phase_factor, par_index_method = par_index_method)
     points_2d_xyz = points_2d_xyz.transpose([1,2,3,0])#.reshape((-1,3))
     #when dim_info_org.index('Par') has a value and the value is bigger than 1 we don't need points_2d_xyz = np.mean(points_2d_xyz,2), the 'Par' doesn't always exist in the dim_info_org
     # print(dim_info_org)
