@@ -28,6 +28,8 @@
   >   [!important]  
   >   Ensure the SCC environment is selected before executing the cells!
 
+  >   [!TIP]  
+  >   The code works with Siemens rawdata (.dat format).
 
    
 
