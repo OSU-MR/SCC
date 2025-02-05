@@ -208,11 +208,23 @@ def points_rps2xyz(scan_index = 0, twix = None,
         #s = 0.5*np.linspace(-1,1,resolution[slice_idx]*1)*fov[slice_idx]+voxelsize[slice_idx]/2
         p = 0.5*np.linspace(-1,1,resolution[phase_idx]*oversampling_phase_factor)*fov[phase_idx]*oversampling_phase_factor+voxelsize[phase_idx]/2
     
-
+    # Following code create x,y,z corrdinates for the points
+    # scan_index == 0 => pre scan from the body coil
+    # scan_index == 1 => image scan
     [RR,PP,SS] = np.meshgrid(r[::-1], p[::-1], s[::-1])
 
     points_rps = np.vstack([RR.ravel(), PP.ravel(), SS.ravel()])#.T
 
+    # When it is pre scan (scan_index == 0), we keep the coordinates as they are.
+    # When it is image scan (scan_index == 1), the default coordinates are generated in image coordinate system (the right one in Coordinate_sytems.png).
+    # We first rotate it to anatomical coordinate system (the middle one in Coordinate_sytems.png) with np.dot(  np.linalg.inv(rps_from_quat(..., img_ori = img_quat))  ,points_rps) + offset
+    # Then we rotate it from the anatomical coordinate system to world coordinate system (the left one in Coordinate_sytems.png) with np.dot( rps_from_quat(..., img_ori = img_quat_scan_0) , points_in_anatomical_coordinate_system - offset )
+    # In summary: 
+    # When it is pre scan  : world coordinate system(default)
+    # When it is image scan: image coordinate system(default) => anatomical coordinate system => world coordinate system
+    # Check following links for more information:
+    # https://www.slicer.org/w/img_auth.php/2/22/Coordinate_sytems.png
+    # https://www.slicer.org/wiki/Coordinate_systems
     if scan_index == 0:
         #print("rotmatrix:\n",rotmatrix)
         points_xyz = points_rps
