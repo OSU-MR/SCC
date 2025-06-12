@@ -150,51 +150,59 @@ def recursive_delete_dir(target_dir):
     os.rmdir(target_dir)
 
 def install_twixtools(auto_install_missing_packages = False):
-    # URL of the zip file
-    url = "https://codeload.github.com/pehses/twixtools/zip/refs/heads/master"
-    target_path = "twixtools-master.zip"
-    
-    # Downloading the zip file
+
+    # Downloading the twixtools pip file
     print("Downloading twixtools...")
-    download_file(url, target_path)
     
-    # Extracting the zip file
-    print("Extracting the zip file...")
-    with zipfile.ZipFile(target_path, 'r') as zip_ref:
-        zip_ref.extractall(".")
+    # download the *sdist* (tar.gz) instead of the wheel
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "download", "twixtools",
+        "--no-binary", ":all:",      # <-- crucial
+        "--no-deps", "-d", "."
+    ])
+    
+    src = glob.glob("twixtools-*.tar.gz")[0]        # e.g. twixtools-0.23.tar.gz
+    src_name = src.split('.tar.gz')[0]
+    print("twixtools package downloaded, version: ", src_name)
+    
+    # unpack into twixtools-*/
+    with tarfile.open(src) as tf:
+        tf.extractall(".")
 
     # Replace twix_map.py with the one in current directory
     print("Replacing twix_map.py and geometry.py...")
     try:
-        copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
-        copy_file('./helper_functions/geometry.py', './twixtools-master/twixtools/geometry.py')
+        copy_file('./helper_functions/map_twix.py', './'+src_name+'/twixtools/map_twix.py')
+        copy_file('./helper_functions/geometry.py', './'+src_name+'/twixtools/geometry.py')
     except FileNotFoundError:
         #download the modified twixtools
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
         download_file_from_figshare('./helper_functions/',url_map_twix)
-        copy_file('./helper_functions/map_twix.py', './twixtools-master/twixtools/map_twix.py')
+        copy_file('./helper_functions/map_twix.py', './'+src_name+'/twixtools/map_twix.py')
         os.remove('./helper_functions/map_twix.py')
         #download the modified geometry.py
-        url_geomery_twix = "https://figshare.com/ndownloader/files/44520365"
+        url_geomery_twix = "https://figshare.com/ndownloader/files/55351121"
         download_file_from_figshare('./helper_functions/',url_geomery_twix)
-        copy_file('./helper_functions/geometry.py', './twixtools-master/twixtools/geometry.py')
+        copy_file('./helper_functions/geometry.py', './'+src_name+'/twixtools/geometry.py')
         os.remove('./helper_functions/geometry.py')
     
-    
 
-    
-    # Installing twixtools
-    os.chdir("twixtools-master/twixtools")
     print("Installing twixtools...")
-    installing_result = subprocess.run(["pip", "install", "."])
-    print(installing_result)
-    os.chdir("../..")
+    
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-e", src_name],
+        capture_output=True,   # collects stdout & stderr
+        text=True
+    )
+
+    if result.returncode != 0:
+        print("An error occurred while installing twixtools. Please contact the author with the following information.")
+        print("STDERR:\n", result.stderr)
 
     # Removing the zip file and the extracted directory
     print("Removing the zip file and the extracted directory...")
-    os.remove(target_path)
-    directory_to_delete = 'twixtools-master'
-    recursive_delete_dir(directory_to_delete)
+    os.remove(src)
+    recursive_delete_dir(src_name)
 
     if auto_install_missing_packages:
         # Check and install numpy if required
