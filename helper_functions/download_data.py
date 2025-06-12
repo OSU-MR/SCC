@@ -186,7 +186,8 @@ def install_twixtools(auto_install_missing_packages = False):
     # Installing twixtools
     os.chdir("twixtools-master/twixtools")
     print("Installing twixtools...")
-    subprocess.run(["pip", "install", "."])
+    installing_result = subprocess.run(["pip", "install", "."])
+    print(installing_result)
     os.chdir("../..")
 
     # Removing the zip file and the extracted directory
