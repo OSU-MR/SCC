@@ -96,7 +96,7 @@ def points_rps2xyz(scan_index = 0, twix = None,
     phase_idx = 1
     slice_idx = 2
 
-    geo = twix[scan_index]['geometry'][0]
+    geo = twix[scan_index]['geometry']#[0]
     # print(twix[scan_index])
     resolution = geo.resolution if resolution is None else resolution
     fov = geo.fov if fov is None else fov
