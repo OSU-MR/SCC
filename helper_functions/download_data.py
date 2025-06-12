@@ -149,63 +149,55 @@ def recursive_delete_dir(target_dir):
     # Once the directory is empty, delete it
     os.rmdir(target_dir)
 
-import subprocess, sys, glob, os, tarfile
+import subprocess, sys, importlib.util, pathlib, shutil
 
 def install_twixtools(auto_install_missing_packages = False):
-
-    # Downloading the twixtools pip file
-    print("Downloading twixtools...")
     
-    # download the *sdist* (tar.gz) instead of the wheel
+    
+    # ----------------------------------------------------------------------
+    # 1) Install or upgrade twixtools (edit --user → sudo if you want global)
+    # ----------------------------------------------------------------------
     subprocess.check_call([
-        sys.executable, "-m", "pip", "download", "twixtools",
-        "--no-binary", ":all:",      # <-- crucial
-        "--no-deps", "-d", "."
+        sys.executable, "-m", "pip", "install", "twixtools"            # drop --user & prefix with sudo for system-wide
     ])
     
-    src = glob.glob("twixtools-*.tar.gz")[0]        # e.g. twixtools-0.23.tar.gz
-    src_name = src.split('.tar.gz')[0]
-    print("twixtools package downloaded, version: ", src_name)
+    # ----------------------------------------------------------------------
+    # 2) Locate the package on disk
+    # ----------------------------------------------------------------------
+    spec = importlib.util.find_spec("twixtools")
+    if spec is None or spec.origin is None:
+        raise RuntimeError("twixtools not importable after installation.")
     
-    # unpack into twixtools-*/
-    with tarfile.open(src) as tf:
-        tf.extractall(".")
+    pkg_dir = pathlib.Path(spec.origin).parent      # …/site-packages/twixtools
+    print("twixtools lives at:", pkg_dir)
+    
+    # ----------------------------------------------------------------------
+    # 3) Replace files with your patched versions
+    # ----------------------------------------------------------------------
+    src_root = pathlib.Path("helper_functions")     # adjust if different
 
-    # Replace twix_map.py with the one in current directory
     print("Replacing twix_map.py and geometry.py...")
     try:
-        copy_file('./helper_functions/map_twix.py', './'+src_name+'/twixtools/map_twix.py')
-        copy_file('./helper_functions/geometry.py', './'+src_name+'/twixtools/geometry.py')
+        for fname in ("map_twix.py", "geometry.py"):
+            shutil.copy2(src_root / fname, pkg_dir / fname)
+            print(f"  → replaced {fname}")
     except FileNotFoundError:
         #download the modified twixtools
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
         download_file_from_figshare('./helper_functions/',url_map_twix)
-        copy_file('./helper_functions/map_twix.py', './'+src_name+'/twixtools/map_twix.py')
-        os.remove('./helper_functions/map_twix.py')
         #download the modified geometry.py
         url_geomery_twix = "https://figshare.com/ndownloader/files/55351121"
         download_file_from_figshare('./helper_functions/',url_geomery_twix)
-        copy_file('./helper_functions/geometry.py', './'+src_name+'/twixtools/geometry.py')
+
+        for fname in ("map_twix.py", "geometry.py"):
+            shutil.copy2(src_root / fname, pkg_dir / fname)
+            print(f"  → replaced {fname}")
+        
+        os.remove('./helper_functions/map_twix.py')
         os.remove('./helper_functions/geometry.py')
     
-
-    print("Installing twixtools...")
+    print("twixtools patched successfully.")
     
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-e", src_name],
-        capture_output=True,   # collects stdout & stderr
-        text=True
-    )
-
-    if result.returncode != 0:
-        print("An error occurred while installing twixtools. Please contact the author with the following information.")
-        print("STDERR:\n", result.stderr)
-
-    # Removing the zip file and the extracted directory
-    print("Removing the zip file and the extracted directory...")
-    os.remove(src)
-    #recursive_delete_dir(src_name)
-
     if auto_install_missing_packages:
         # Check and install numpy if required
         if not check_numpy_version():
