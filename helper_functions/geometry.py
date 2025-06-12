@@ -133,6 +133,10 @@ class Geometry:
         if n_slice is None and len(twix["hdr"]["MeasYaps"]["sSliceArray"]["asSlice"]) > 1:
             print("WARNING: Geometry calculations are valid only for the first slice in this multi-slice acquisition.")
             n_slice = 0
+        elif len(twix["hdr"]["MeasYaps"]["sSliceArray"]["asSlice"]) == 1:
+            n_slice = 0
+        
+        print(len(twix["hdr"]["MeasYaps"]["sSliceArray"]["asSlice"]))
 
         self.fov = [
             twix["hdr"]["MeasYaps"]["sSliceArray"]["asSlice"][n_slice]["dReadoutFOV"]
@@ -161,7 +165,7 @@ class Geometry:
                     (i.e. parse_geometry AND NOT parse_data.) - this is not possible.\n\
                     Please either set parse_geometry = False or parse_data = True")
 
-            raise RuntimeError("MDBs-Needed-For-Slice-Geometry")
+            #raise RuntimeError("MDBs-Needed-For-Slice-Geometry")
 
         self._prs_to_pcs_mat = prs2sct_mdb(twix, n_slice)
 
