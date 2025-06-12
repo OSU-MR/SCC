@@ -204,7 +204,7 @@ def install_twixtools(auto_install_missing_packages = False):
     # Removing the zip file and the extracted directory
     print("Removing the zip file and the extracted directory...")
     os.remove(src)
-    recursive_delete_dir(src_name)
+    #recursive_delete_dir(src_name)
 
     if auto_install_missing_packages:
         # Check and install numpy if required
