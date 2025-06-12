@@ -97,7 +97,7 @@ def remove_RO_oversamling(data, axis_RO = 0):
     # copy Y to data
     tmp_N = list(N)
     tmp_N[0] = Y.shape[0]
-    data_no_os = np.zeros(tmp_N, dtype=np.complex_)
+    data_no_os = np.zeros(tmp_N, dtype=np.complex128)
     data_no_os = np.reshape(data_no_os, [tmp_N[0], int(np.prod(tmp_N)/tmp_N[0])])
     data_no_os[:, tmp_samp] = Y
     data_no_os = np.reshape(data_no_os, tmp_N)
