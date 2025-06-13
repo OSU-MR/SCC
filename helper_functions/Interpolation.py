@@ -21,6 +21,8 @@ def generate_3D_data(mapped_data ,pre_scan = 0):
     ## reshape the data
     # set-0: data from small coils
     # set-1: data from large coils (only first 2 channels are valid)
+    if pre_scan == 0:
+        print("Information for pre-scan:")
     print('original data shape:', data_org.shape)
     print(dim_info_org_pre)
     # rearrange the data array
