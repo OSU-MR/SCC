@@ -186,7 +186,7 @@ def install_twixtools(auto_install_missing_packages = False):
         url_map_twix = "https://figshare.com/ndownloader/files/41951475"
         download_file_from_figshare('./helper_functions/',url_map_twix)
         #download the modified geometry.py
-        url_geomery_twix = "https://figshare.com/ndownloader/files/55351121"
+        url_geomery_twix = "https://figshare.com/ndownloader/files/55355876"
         download_file_from_figshare('./helper_functions/',url_geomery_twix)
 
         for fname in ("map_twix.py", "geometry.py"):
